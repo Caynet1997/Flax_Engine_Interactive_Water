@@ -1,0 +1,424 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Configurations>Editor.Windows.Debug;Editor.Windows.Development;Editor.Windows.Release;Game.Windows.Debug;Game.Windows.Development;Game.Windows.Release</Configurations>
+    <Platforms>x64;ARM64;Win32</Platforms>
+    <Configuration>Editor.Windows.Debug</Configuration>
+    <Platform>x64</Platform>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultItems>false</EnableDefaultItems>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <EnableBaseIntermediateOutputPathMismatchWarning>false</EnableBaseIntermediateOutputPathMismatchWarning>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <RootNamespace>Game</RootNamespace>
+    <AssemblyName>Game.CSharp</AssemblyName>
+    <LangVersion>12.0</LangVersion>
+    <FileAlignment>512</FileAlignment>
+    <CustomAfterMicrosoftCommonTargets>$(MSBuildThisFileDirectory)..\Cache\Projects\Flax.Build.CSharp.targets</CustomAfterMicrosoftCommonTargets>
+    <RestorePackages>false</RestorePackages>
+    <DisableFastUpToDateCheck>True</DisableFastUpToDateCheck>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameEditorTarget\Windows\x64\Debug\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEBUG;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameEditorTarget\Windows\x64\Debug\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameEditorTarget\Windows\x64\Debug\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\x64\Debug\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEBUG;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameEditorTarget\Windows\x64\Debug\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|ARM64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameEditorTarget\Windows\ARM64\Debug\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\ARM64\Debug\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\ARM64\Debug\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEBUG;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameEditorTarget\Windows\ARM64\Debug\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|ARM64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameEditorTarget\Windows\x64\Development\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\x64\Development\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\x64\Development\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEVELOPMENT;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameEditorTarget\Windows\x64\Development\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|ARM64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameEditorTarget\Windows\ARM64\Development\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\ARM64\Development\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\ARM64\Development\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEVELOPMENT;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameEditorTarget\Windows\ARM64\Development\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|ARM64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Binaries\GameEditorTarget\Windows\x64\Release\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\x64\Release\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\x64\Release\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_RELEASE;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameEditorTarget\Windows\x64\Release\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|ARM64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Binaries\GameEditorTarget\Windows\ARM64\Release\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\ARM64\Release\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameEditorTarget\Windows\ARM64\Release\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_RELEASE;PLATFORM_WINDOWS;FLAX_EDITOR;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameEditorTarget\Windows\ARM64\Release\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|ARM64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\x64\Debug\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x64\Debug\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x64\Debug\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEBUG;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\x64\Debug\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|Win32' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\x86\Debug\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x86\Debug\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x86\Debug\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEBUG;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\x86\Debug\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|Win32' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|ARM64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\ARM64\Debug\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\ARM64\Debug\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\ARM64\Debug\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEBUG;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\ARM64\Debug\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|ARM64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\x64\Development\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x64\Development\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x64\Development\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEVELOPMENT;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\x64\Development\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|Win32' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\x86\Development\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x86\Development\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x86\Development\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEVELOPMENT;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\x86\Development\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|Win32' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|ARM64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\ARM64\Development\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\ARM64\Development\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\ARM64\Development\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_DEVELOPMENT;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\ARM64\Development\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|ARM64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\x64\Release\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x64\Release\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x64\Release\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_RELEASE;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\x64\Release\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|Win32' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\x86\Release\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x86\Release\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\x86\Release\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_RELEASE;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\x86\Release\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|Win32' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|ARM64' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>portable</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Binaries\GameTarget\Windows\ARM64\Release\</OutputPath>
+    <BaseIntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\ARM64\Release\CSharp\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>..\Cache/Intermediate\GameTarget\Windows\ARM64\Release\CSharp\</IntermediateOutputPath>
+    <DefineConstants>BUILD_RELEASE;PLATFORM_WINDOWS;FLAX_GAME;FLAX;FLAX_ASSERTIONS;USE_NETCORE;NET;NET8_0;NET8_0_OR_GREATER;NETCOREAPP;NETCOREAPP3_1_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP2_2_OR_GREATER;NETCOREAPP2_1_OR_GREATER;NETCOREAPP2_0_OR_GREATER;NETCOREAPP1_1_OR_GREATER;NETCOREAPP1_0_OR_GREATER;FLAX_1;FLAX_1_10;FLAX_1_1_OR_NEWER;FLAX_1_2_OR_NEWER;FLAX_1_3_OR_NEWER;FLAX_1_4_OR_NEWER;FLAX_1_5_OR_NEWER;FLAX_1_6_OR_NEWER;FLAX_1_7_OR_NEWER;FLAX_1_8_OR_NEWER;FLAX_1_9_OR_NEWER;FLAX_1_10_OR_NEWER</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>1591</NoWarn>
+    <DocumentationFile>..\Binaries\GameTarget\Windows\ARM64\Release\Game.CSharp.xml</DocumentationFile>
+    <UseVSHostingProcess>true</UseVSHostingProcess>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|ARM64' ">
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\Flax_master\Source\Platforms\DotNet\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="FlaxEngine.CSharp">
+      <HintPath>..\..\Flax_master\Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Shaders\WaterRippleShader\WaterRipple.shader" />
+    <Compile Include="Game.Gen.cs" />
+    <Compile Include="Game\ExitOnEsc.cs" />
+    <Compile Include="Game\FreeCamera.cs" />
+    <Compile Include="Game\Trials\InteractiveWater.cs" />
+    <Compile Include="Game\Trials\PerlinNoiseGenerator.cs" />
+    <Compile Include="Game\Trials\PlanarReflection.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameEditorTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|ARM64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameEditorTarget\Windows\ARM64\Debug\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|x64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameEditorTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Development|ARM64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameEditorTarget\Windows\ARM64\Development\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|x64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameEditorTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Release|ARM64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameEditorTarget\Windows\ARM64\Release\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|x64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|Win32' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\Win32\Debug\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Debug|ARM64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\ARM64\Debug\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|x64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\x64\Development\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|Win32' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\Win32\Development\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Development|ARM64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\ARM64\Development\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|x64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\x64\Release\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|Win32' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\Win32\Release\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Game.Windows.Release|ARM64' " >
+    <Compile Visible="false" Include="F:\FlaxEngine\InteractiveWater\Cache\Intermediate\GameTarget\Windows\ARM64\Release\Game\Game.Bindings.Gen.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,18 @@
+{
+  "Name": "GameTarget",
+  "Platform": "Windows",
+  "Architecture": "x64",
+  "Configuration": "Development",
+  "BinaryModules": [
+    {
+      "Name": "Game",
+      "ManagedPath": "$(ProjectPath)/Binaries/GameTarget/Windows/x64/Development/Game.CSharp.dll"
+    }
+  ],
+  "References": [
+    {
+      "ProjectPath": "$(EnginePath)/Flax.flaxproj",
+      "Path": "$(EnginePath)/Source/Platforms/Windows/Binaries/Game/x64/Development/FlaxGame.Build.json"
+    }
+  ]
+}

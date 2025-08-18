@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Game.CSharp</name>
+    </assembly>
+    <members>
+        <member name="T:Game.Game.Gameplay.OutlineRendering">
+            <summary>
+            OutlineRenderer Script.
+            </summary>
+        </member>
+        <member name="M:Game.Game.Gameplay.OutlineRendering.OnEnable">
+            <inheritdoc />
+        </member>
+        <member name="M:Game.Game.Gameplay.OutlineRendering.OnDisable">
+            <inheritdoc />
+        </member>
+        <member name="M:Game.Game.Gameplay.OutlineRendering.CanRender">
+            <inheritdoc />
+        </member>
+        <member name="M:Game.Game.Gameplay.OutlineRendering.Render(FlaxEngine.GPUContext,FlaxEngine.RenderContext@,FlaxEngine.GPUTexture,FlaxEngine.GPUTexture)">
+            <inheritdoc />
+        </member>
+        <member name="M:Game.Game.Trials.CustomSceneRendering.OnEnable">
+            <inheritdoc/>
+        </member>
+    </members>
+</doc>

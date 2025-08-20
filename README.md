@@ -1,5 +1,5 @@
 # Interactive Water in Flax Engine 1.10
-<img width="1873" height="1260" alt="image" src="https://github.com/user-attachments/assets/c4490e54-79b2-4ca6-9c78-d8a41311cf74" />
+<img width="1865" height="1264" alt="屏幕截图 2025-08-20 130943" src="https://github.com/user-attachments/assets/b56fceee-492d-4a20-80cc-6746b22fa6b1" />
 
 A simple demo including the following content:
 1. HLSL compute shader to create ripple texture and calculate normal

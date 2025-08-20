@@ -7,5 +7,5 @@ A simple demo including the following content:
 3. A Noise Generator to procedure create normal texture
 4. A Water Material with advanced Screen space refraction
 
-## Knowing Issues:
+## Known Issues:
   Planar reflection can't rendering shadow or sky correctly due to certain depth errors caused by the oblique projection matrix.

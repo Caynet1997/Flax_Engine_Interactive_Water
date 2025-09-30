@@ -4,8 +4,8 @@
 A simple demo including the following content:
 1. HLSL compute shader to create ripple texture and calculate normal
 2. Planar reflection
-3. A Noise Texture Generator to procedurally create normal texture
-4. A Water Material with advanced Screen Space Refraction
+3. A noise texture generator to procedurally create normal texture
+4. A water material with advanced screen space refraction
 
 ## Known Issues:
   Planar reflection can't rendering shadow or sky correctly due to certain depth errors caused by the oblique projection matrix.

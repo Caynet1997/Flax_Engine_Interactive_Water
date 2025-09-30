@@ -4,7 +4,7 @@
 A simple demo including the following content:
 1. HLSL compute shader to create ripple texture and calculate normal
 2. Planar reflection
-3. A Noise Generator to procedure create normal texture
+3. A Noise Texture Generator to procedurally create normal texture
 4. A Water Material with advanced Screen space refraction
 
 ## Known Issues:

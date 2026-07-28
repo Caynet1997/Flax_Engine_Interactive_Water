@@ -1,16 +1,16 @@
 {
 	"ID": "bb6fbecf458db0ecffa5e2a5155b2b4f",
 	"TypeName": "FlaxEditor.Content.Settings.LayersAndTagsSettings",
-	"EngineBuild": 6705,
+	"EngineBuild": 6914,
 	"Data": {
 	"Tags": [],
 	"Layers": [
 		"Default",
 		"Player",
 		"Enemy",
-		"",
-		"",
-		null,
+		"Sky",
+		"Water",
+		"WaterStencil",
 		null,
 		null,
 		null,

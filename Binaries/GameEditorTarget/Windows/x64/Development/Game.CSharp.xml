@@ -4,5 +4,120 @@
         <name>Game.CSharp</name>
     </assembly>
     <members>
+        <member name="T:Game.Game.Trials.BuoyantObject">
+            <summary>
+            浮力物体: 与水面交互 (入水浪花、移动尾迹) 并受浮力/水阻影响。
+            挂载在带有 RigidBody 的物体上 (或其父级)。
+            </summary>
+        </member>
+        <member name="T:Game.Game.Trials.WaterQualityLevel">
+            <summary>
+            模拟质量等级, 决定流体纹理分辨率
+            </summary>
+        </member>
+        <member name="T:Game.Game.Trials.WaterBoundaryMode">
+            <summary>
+            边界条件模式
+            </summary>
+        </member>
+        <member name="T:Game.Game.Trials.WaterPreset">
+            <summary>
+            Gerstner 环境浪预设: 自动生成一组自然波浪, 无需手动配置每个波。
+            </summary>
+        </member>
+        <member name="T:Game.Game.Trials.GerstnerWave">
+            <summary>
+            Gerstner 环境浪参数 (CPU/GPU 共用同一公式, 保证渲染与浮力一致)。
+            内存布局 32 字节 (8 float), 与 shader 结构体一致。
+            </summary>
+        </member>
+        <member name="T:Game.Game.Trials.InteractiveWater">
+            <summary>
+            交互式 2D 流体水面: 基于浅水方程 (SWE) 的 GPU 模拟。
+            高度场 h 与速度场 (u,v) 耦合, 支持波传播/反射、水流汇聚、多触点交互、泡沫与多尺度法线。
+            </summary>
+        </member>
+        <member name="P:Game.Game.Trials.InteractiveWater.Instance">
+            <summary>全局实例, 供 BuoyantObject 等交互组件访问</summary>
+        </member>
+        <member name="P:Game.Game.Trials.InteractiveWater.WaterSurfaceY">
+            <summary>水面基准高度 (世界 Y, 不含波浪)</summary>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.CollectTouches">
+            <summary>
+            收集触点 (纹理空间)。返回触点数量; 同时填充 _touchData 与 CB 单触点回退字段。
+            </summary>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.AddObjectTouch(FlaxEngine.Vector3,System.Single,System.Single)">
+            <summary>
+            由交互组件调用: 注入一个物体触点 (世界坐标自动换算为纹理坐标)。
+            </summary>
+            <param name="worldPos">物体世界位置</param>
+            <param name="strength">冲量强度</param>
+            <param name="worldRadius">影响半径 (世界单位)</param>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.DispatchNormals(FlaxEngine.GPUContext)">
+            <summary>
+            法线 Pass: 从最新状态合成多尺度法线。每帧运行 (静止时保持细节流动)。
+            </summary>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.UpdateWaveBuffer(FlaxEngine.GPUContext)">
+            <summary>
+            填充并绑定 Gerstner 波缓冲 (归一化方向)。
+            </summary>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.GetWaterHeight(FlaxEngine.Vector3)">
+            <summary>
+            计算指定世界位置的水面高度 (基准高度 + Gerstner 环境浪)。
+            与 shader 使用同一公式, 供浮力等 CPU 逻辑使用。
+            </summary>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.GenerateWaves(Game.Game.Trials.WaterPreset)">
+            <summary>
+            根据预设自动生成一组自然的 Gerstner 波 (仿频谱分布: 长波为主, 短波递减, 方向围绕主方向扩散)。
+            </summary>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.Hash01(System.Int32)">
+            <summary>确定性哈希 → [0,1] (用于预设生成的随机但可复现的波参数)。</summary>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.ApplyPreset(Game.Game.Trials.WaterPreset)">
+            <summary>
+            应用预设: 统一配置 Gerstner 波浪 与 细节噪声参数 (尺度/强度/速度)。
+            </summary>
+        </member>
+        <member name="M:Game.Game.Trials.InteractiveWater.ValidateCFL">
+            <summary>
+            CFL 稳定性校验: 要求 dt * sqrt(g*H) / dx 小于 1。违反时警告 (可能导致发散)。
+            </summary>
+        </member>
+        <member name="T:Game.Game.Trials.RainController">
+            <summary>
+            独立下雨控制器: 驱动水面的雨滴强度 (RainStrength)。
+            作为独立模块挂载到场景即可开启下雨, 移除即停止, 与水体解耦。
+            </summary>
+        </member>
+        <member name="T:Game.Game.Trials.ReflectionUtils">
+            <summary>
+            反射/折射渲染工具类: 提供反射相机计算和斜裁剪投影矩阵
+            </summary>
+        </member>
+        <member name="M:Game.Game.Trials.ReflectionUtils.CalculateReflectionTransform(FlaxEngine.Transform,FlaxEngine.Vector3,FlaxEngine.Vector3)">
+            <summary>
+            根据源相机 Transform 和反射平面计算反射相机的 Transform
+            </summary>
+            <param name="sourceTransform">源相机 Transform</param>
+            <param name="planePosition">反射平面上的点</param>
+            <param name="planeNormal">反射平面法线 (朝上)</param>
+            <returns>反射相机的 Transform</returns>
+        </member>
+        <member name="M:Game.Game.Trials.ReflectionUtils.GetObliqueProjectionMatrix(FlaxEngine.Matrix,FlaxEngine.Vector4)">
+            <summary>
+            计算斜裁剪投影矩阵 (Eric Lengyel 算法, 适配 Flax 行向量约定与 [0,1] 深度范围)
+            将投影矩阵的近裁剪面替换为任意裁剪平面, 用于平面反射/折射的裁剪
+            </summary>
+            <param name="projectionMatrix">原始投影矩阵</param>
+            <param name="viewSpaceClipPlane">视图空间中的裁剪平面 (xyz=法线指向保留侧, w=距离)</param>
+            <returns>修改后的斜投影矩阵</returns>
+        </member>
     </members>
 </doc>

@@ -2,9 +2,9 @@
   "profiles": {
     "Game": {
       "commandName": "Executable",
-      "workingDirectory": "F:/FlaxEngine/InteractiveWater",
-      "executablePath": "F:/FlaxEngine/Flax_master/Binaries/Editor/Win64/Development/FlaxEditor.exe",
-      "commandLineArgs": "-project \"F:/FlaxEngine/InteractiveWater\"",
+      "workingDirectory": "C:/Users/12847/Documents/GitHub/Flax_Engine_Interactive_Water",
+      "executablePath": "C:/Program Files (x86)/Flax/Flax_master/Binaries/Editor/Win64/$(FlaxConfiguration)/FlaxEditor.exe",
+      "commandLineArgs": "-project \"C:/Users/12847/Documents/GitHub/Flax_Engine_Interactive_Water\"",
       "nativeDebugging": false
     }
   }

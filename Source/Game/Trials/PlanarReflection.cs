@@ -8,313 +8,390 @@ namespace Game.Game.Trials;
 
 public class PlanarReflection : Script
 {
-	public string ReflectionParamName = "MainTex";
-	public string FlectionParamName = "FlectionTex";
-	public MaterialInstance Material;
-	public Camera MainCamera { get; set; }
-	public LayersMask ReflectionLayers { get; set; }
+    public GPUTexture ReflectionTexture;
+    public GPUTexture SkyTexture;
+    public GPUTexture ScreenTexture;
+    public GPUTexture ScreenDepth;
+    public string ReflectionParamName = "ReflectionTexture";
+    public string SkyParamName = "SkyTexture";
+    public string ScreenParamName = "ScreenTexture";
+    public string ScreenDepthParamName = "ScreenDepth";
+    public MaterialInstance Material;
+    public Camera MainCamera { get; set; }
+    public LayersMask ReflectionLayers { get; set; }
+    public LayersMask SkyLayer { get; set; }
+    public LayersMask ScreenLayer { get; set; }
 
-	public LayersMask SkyLayer { get; set; }
+    [Limit(0f, 1f)]
+    public float UpdateFrequency { get; set; } = 1f;
 
-	[Limit(0f, 1f)]
-	public float UpdateFrequency { get; set; } = 1f;
-
-	[Limit(0f, 1f)]
-	public float ResolutionScale
-	{
-		get => _resolutionScale;
-		set
-		{
-			value = Mathf.Clamp(value, 0.01f, 1f);
-			if (float.Abs(_resolutionScale - value) > 0.0001f)
-			{
-				_resolutionScale = value;
-				if (_taskReflectionScene) _taskReflectionScene.RenderingPercentage = value;
-				if (_taskFlectionScene) _taskFlectionScene.RenderingPercentage = value;
-				UpdateOutput();
-			}
-		}
-	}
-	[ShowInEditor, ReadOnly]
-	private Float2 _resolution =
-		MainRenderTask.Instance ? MainRenderTask.Instance.Viewport.Size : Float2.One * 512;
-
-	public float ClipPlaneOffset;
-	public ViewFlags ReflectionViewFlags;
-	public ViewFlags FlectionViewFlags;
-	private float _resolutionScale = 1f;
-	private float _updateFrequencyCounter;
-	private GPUTexture _output0;
-	private GPUTexture _output1;
-	private SceneRenderTask _taskReflectionScene;
-	private SceneRenderTask _taskFlectionScene;
-	private Vector4 _reflectionPlane;
-	private Vector4 _flectionPlane;
-	private Camera ReflectionCamera;
-
-
-	public override void OnEnable()
-	{
-		if (MainCamera == null)
-		{
-			MainCamera = Camera.MainCamera;
-			if (MainCamera == null)
-			{
-				Debug.LogError("Main Camera is null");
-				return;
-			}
-		}
-
-		if (ReflectionCamera == null)
-		{
-			ReflectionCamera = new Camera
-			{
-				Name = "ReflectionCamera",
-				FarPlane = MainCamera.FarPlane,
-				NearPlane = MainCamera.NearPlane,
-				FieldOfView = MainCamera.FieldOfView,
-				CustomAspectRatio = MainCamera.CustomAspectRatio,
-				RenderFlags = ReflectionViewFlags,
-				RenderMode = MainCamera.RenderMode,
-				RenderLayersMask = ReflectionLayers,
-				HideFlags = HideFlags.DontSave,
-				Parent = Scene
-			};
-		}
-		else
-		{
-			ReflectionCamera.FarPlane = MainCamera.FarPlane;
-			ReflectionCamera.NearPlane = MainCamera.NearPlane;
-			ReflectionCamera.FieldOfView = MainCamera.FieldOfView;
-			ReflectionCamera.CustomAspectRatio = MainCamera.CustomAspectRatio;
-			ReflectionCamera.RenderFlags = ReflectionViewFlags;
-			ReflectionCamera.RenderMode = MainCamera.RenderMode;
-			ReflectionCamera.HideFlags = HideFlags.HideInHierarchy|HideFlags.DontSave;
-			ReflectionCamera.Parent = Scene;
-		}
-		Camera.OverrideMainCamera = MainCamera;
-
-		// Create backbuffer
-		if (_output0 == null) _output0 = new GPUTexture();
-		if (_output1 == null) _output1 = new GPUTexture();
-		UpdateOutput();
-		
-
-		// Create rendering task
-		if (_taskReflectionScene == null)
-		{
-			_taskReflectionScene = new SceneRenderTask
-			{
-				Output = _output0,
-				Order = -100,
-				Camera = ReflectionCamera,
-				ViewFlags = ReflectionViewFlags,
-				Enabled = false
-			};
-		}
-
-		if (_taskFlectionScene == null)
-		{
-			_taskFlectionScene = new SceneRenderTask
-			{
-				Output = _output1,
-				Order = -99,
-				Camera = MainCamera,
-				ViewFlags = FlectionViewFlags,
-				Enabled = false
-			};
-		}
-		_taskReflectionScene.PreRender += OnRelectionPreRender;
-		_taskReflectionScene.Enabled = true;
-
-		_taskFlectionScene.PreRender += OnFlectionPreRender;
-		_taskFlectionScene.Enabled = true;
-
-		if (Material != null)
-		{
-			Material.SetParameterValue(ReflectionParamName, _output0);
-			Material.SetParameterValue(FlectionParamName, _output1);
-		}
-	}
-
-
-	public override void OnDisable()
-	{
-		_taskReflectionScene.PreRender -= OnRelectionPreRender;
-		Destroy(ref _taskReflectionScene);
-		Destroy(ref _output0);
-
-		_taskFlectionScene.PreRender -= OnFlectionPreRender;
-		Destroy(ref _taskFlectionScene);
-		Destroy(ref _output1);
-	}
-
-	public override void OnUpdate()
-	{
-		_updateFrequencyCounter += UpdateFrequency;
-		if (_updateFrequencyCounter >= 1f)
-		{
-			_updateFrequencyCounter = 0f;
-			_taskReflectionScene.Enabled = true;
-			_taskFlectionScene.Enabled = true;
-		}
-		else
-		{
-			_taskReflectionScene.Enabled = false;
-			_taskFlectionScene.Enabled = false;
-		}
-	}
-
-    public override void OnLateUpdate()
+    [Limit(0f, 1f)]
+    public float ResolutionScale
     {
+        get => _resolutionScale;
+        set
+        {
+            value = Mathf.Clamp(value, 0.01f, 1f);
+            if (float.Abs(_resolutionScale - value) > 0.0001f)
+            {
+                _resolutionScale = value;
+                if (_taskReflectionScene)
+                    _taskReflectionScene.RenderScale = value;
+                if (_taskSkyScene)
+                    _taskSkyScene.RenderScale = value;
+                if (_taskScreenScene)
+                    _taskScreenScene.RenderScale = value;
+                if (_taskScreenDepth)
+                    _taskScreenDepth.RenderScale = value;
+                UpdateOutput();
+            }
+        }
     }
 
-	private void UpdateReflectionCamera()
-	{
-		// Calculate Reflection Camera Position
-		Transform transform = MainCamera.Transform;
+    [ShowInEditor, ReadOnly]
+    private Float2 _resolution = MainRenderTask.Instance
+        ? MainRenderTask.Instance.Viewport.Size
+        : Float2.One * 512;
 
-		// Calculate dot-normal method plane.
-		Vector3 position = Actor.Position;
-		Vector3 normal = Actor.Transform.Up;
-		float d = -Vector3.Dot(normal, position) - ClipPlaneOffset;
-		_reflectionPlane = new Vector4(normal.X, normal.Y, normal.Z, d);
-		_flectionPlane = new Vector4(normal.X, normal.Y, normal.Z, d + 1);
+    public float ClipPlaneOffset;
+    public ViewFlags ReflectionViewFlags;
+    private float _resolutionScale = 1f;
+    private float _updateFrequencyCounter;
+    private SceneRenderTask _taskReflectionScene;
+    private SceneRenderTask _taskSkyScene;
+    private SceneRenderTask _taskScreenScene;
+    private SceneRenderTask _taskScreenDepth;
+    private Vector4 _reflectionPlane;
+    private Camera _reflectionCamera;
+    private Camera _screenCamera;
 
-		// Calculate Reflection Camera Position and Rotation
-		Vector3 camPos = transform.Translation;
-		Vector3 reflectionCamPos = camPos - 2 * (Vector3.Dot(camPos, normal) + d) * normal;
-		Vector3 originalForward = transform.Forward;
-		Vector3 originalUp = transform.Up;
-		Vector3 reflectedForward = originalForward - 2 * Vector3.Dot(originalForward, normal) * normal;
-		Vector3 reflectedUp = originalUp - 2 * Vector3.Dot(originalUp, normal) * normal;
-		Transform newTransform = new()
-		{
-			Orientation = Quaternion.LookRotation(reflectedForward, reflectedUp),
-			Translation = reflectionCamPos,
-		};
+    public override void OnEnable()
+    {
+        if (MainCamera == null)
+        {
+            MainCamera = Camera.MainCamera;
+            if (MainCamera == null)
+            {
+                Debug.LogError("PlanarReflection: Main Camera is null");
+                return;
+            }
+        }
 
-		ReflectionCamera.Transform = newTransform;
-	}
+        if (_reflectionCamera == null)
+        {
+            _reflectionCamera = new Camera
+            {
+                Name = "ReflectionCamera",
+                FarPlane = MainCamera.FarPlane,
+                NearPlane = MainCamera.NearPlane,
+                FieldOfView = MainCamera.FieldOfView,
+                CustomAspectRatio = MainCamera.CustomAspectRatio,
+                RenderFlags = ReflectionViewFlags,
+                RenderMode = MainCamera.RenderMode,
+                RenderLayersMask = ReflectionLayers,
+                HideFlags = HideFlags.DontSave,
+                Parent = Scene,
+            };
+        }
+        else
+        {
+            _reflectionCamera.FarPlane = MainCamera.FarPlane;
+            _reflectionCamera.NearPlane = MainCamera.NearPlane;
+            _reflectionCamera.FieldOfView = MainCamera.FieldOfView;
+            _reflectionCamera.CustomAspectRatio = MainCamera.CustomAspectRatio;
+            _reflectionCamera.RenderFlags = ReflectionViewFlags;
+            _reflectionCamera.RenderMode = MainCamera.RenderMode;
+            _reflectionCamera.HideFlags = HideFlags.HideInHierarchy | HideFlags.DontSave;
+            _reflectionCamera.Parent = Scene;
+        }
 
-	private void OnRelectionPreRender(GPUContext context, ref RenderContext renderContext)
-	{
-		Matrix reflectionViewMatrix = renderContext.View.View;
-		Matrix projectionMatrix = renderContext.View.Projection;
-		Matrix inverseTransposeViewMatrix = Matrix.Transpose(Matrix.Invert(reflectionViewMatrix));
-		Vector4 viewSpaceReflectionPlane = Vector4.Transform(_reflectionPlane, inverseTransposeViewMatrix);
-		Matrix targetProjectionMatrix = GetObliqueProjectionMatrixForDirectX(projectionMatrix, viewSpaceReflectionPlane);
-		renderContext.View.SetUp(ref reflectionViewMatrix, ref targetProjectionMatrix);
-		UpdateReflectionCamera();
-	}
+        if(_screenCamera == null)
+        {
+            _screenCamera = new Camera
+            {
+                Name = "ScreenCamera",
+                FarPlane = MainCamera.FarPlane,
+                NearPlane = MainCamera.NearPlane,
+                FieldOfView = MainCamera.FieldOfView,
+                CustomAspectRatio = MainCamera.CustomAspectRatio,
+                RenderFlags = ViewFlags.DirectionalLights|ViewFlags.SkyLights,
+                RenderMode = MainCamera.RenderMode,
+                RenderLayersMask = ScreenLayer,
+                HideFlags = HideFlags.DontSave,
+                Parent = Scene,
+            };
+        }
+        else
+        {
+            _screenCamera.FarPlane = MainCamera.FarPlane;
+            _screenCamera.NearPlane = MainCamera.NearPlane;
+            _screenCamera.FieldOfView = MainCamera.FieldOfView;
+            _screenCamera.CustomAspectRatio = MainCamera.CustomAspectRatio;
+            _screenCamera.RenderFlags = ViewFlags.DirectionalLights|ViewFlags.SkyLights;
+            _screenCamera.RenderMode = MainCamera.RenderMode;
+            _screenCamera.RenderLayersMask = ScreenLayer;
+            _screenCamera.HideFlags = HideFlags.DontSave;
+            _screenCamera.Parent = Scene;
+        }
 
-	private void OnFlectionPreRender(GPUContext context, ref RenderContext renderContext)
-	{
-		Matrix flectionViewMatrix = renderContext.View.View;
-		Matrix projectionMatrix = renderContext.View.Projection;
-		Matrix inverseTransposeViewMatrix = Matrix.Transpose(Matrix.Invert(flectionViewMatrix));
-		Vector4 viewSpaceReflectionPlane = Vector4.Transform(_flectionPlane, inverseTransposeViewMatrix);
-		Matrix targetProjectionMatrix = GetObliqueProjectionMatrixNew(projectionMatrix, viewSpaceReflectionPlane);
+        Camera.OverrideMainCamera = MainCamera;
 
-		renderContext.View.SetUp(ref flectionViewMatrix, ref targetProjectionMatrix);
-	}
+        // Create backbuffers
+        if (ReflectionTexture == null)
+            ReflectionTexture = new GPUTexture();
+        if (SkyTexture == null)
+            SkyTexture = new GPUTexture();
+        if (ScreenTexture == null)
+            ScreenTexture = new GPUTexture();
+        if (ScreenDepth == null)
+            ScreenDepth = new GPUTexture();
+        UpdateOutput();
 
-	private void UpdateOutput()
-	{
-		if (_output0)
-		{
-			GPUTextureDescription desc0 = GPUTextureDescription.New2D(
-				(int)_resolution.X,
-				(int)_resolution.Y,
-				PixelFormat.R8G8B8A8_UNorm);
-			_output0.Init(ref desc0);
-		}
-		if (_output1)
-		{
-			GPUTextureDescription desc1 = GPUTextureDescription.New2D(
-				(int)_resolution.X,
-				(int)_resolution.Y,
-				PixelFormat.R8G8B8A8_UNorm);
-			
-			_output1.Init(ref desc1);
-		}
-	}
-	private Matrix GetObliqueProjectionMatrixNew(Matrix projectionMatrix, Vector4 viewSpaceClipPlane)
-	{
-		// 计算裁剪空间中的点 q，对应 NDC 的角落 (-1,-1) 或 (1,1) 取决于符号
-		Vector4 q = new(
-			Math.Sign(viewSpaceClipPlane.X),
-			Math.Sign(viewSpaceClipPlane.Y),
-			-1.0f,  // NDC 的近裁面是 z=0，但这里用 -1 表示从后往前
-			1.0f
-		);
-		// 构造修正向量 c
-		Vector4 c = viewSpaceClipPlane * -2.0f * Vector4.Dot(projectionMatrix.Column4, q) / Vector4.Dot(viewSpaceClipPlane, q) + projectionMatrix.Column4;
-		Matrix obliqueProj = projectionMatrix;
-		obliqueProj.Column3 = c;
+        // Create rendering tasks
+        // 反射 Pass 必须剔除阴影/AO 等依赖深度重建的特性:
+        // 斜裁剪投影会扭曲反射深度缓冲, 而阴影贴图是为主相机渲染的,
+        // 在反射的扭曲深度空间中复用会导致阴影错误与闪烁
+        ViewFlags reflectionFlags = ViewFlags.Sky;
 
-		return obliqueProj;
-	}
-	public float dd = 1;
-	
-	private Matrix GetObliqueProjectionMatrixNew1(Matrix projectionMatrix, Vector4 viewSpacePlane)
-	{
-		var M = projectionMatrix;
-		var viewC = Vector4.Normalize(viewSpacePlane);
-		var clipC = Vector4.Transform(viewC, Matrix.Transpose(Matrix.Invert(M)));
-		var clipQ = new Vector4(Math.Sign(clipC.X), Math.Sign(clipC.Y), 1, 1);
-		var viewQ = Vector4.Transform(clipQ, Matrix.Invert(M));
-		var newM3 = dd / Vector4.Dot(viewC, viewQ) * viewC;
-		M.Column3 = newM3;
-		return M;
-	}
+        if (_taskReflectionScene == null)
+        {
+            _taskReflectionScene = new SceneRenderTask
+            {
+                Output = ReflectionTexture,
+                Order = -100,
+                Camera = _reflectionCamera,
+                Enabled = false,
+            };
+        }
+        else
+        {
+            _taskReflectionScene.ViewFlags = reflectionFlags;
+        }
 
-	private Matrix GetObliqueProjectionMatrixForDirectX(Matrix projectionMatrix, Vector4 viewSpacePlane)
-	{
-		Matrix M = projectionMatrix;
-		Vector4 viewC = Vector4.Normalize(viewSpacePlane); // 平面 (a,b,c,d) in view space
-		//var clipC = Vector4.Transform(viewC, Matrix.Transpose(Matrix.Invert(M)));
+        if (_taskSkyScene == null)
+        {
+            _taskSkyScene = new SceneRenderTask
+            {
+                Output = SkyTexture,
+                Order = -99,
+                Camera = _reflectionCamera,
+                ViewFlags = ReflectionViewFlags,
+                ViewLayersMask = ReflectionLayers,
+                Enabled = false,
+            };
+        }
 
-		// Step 1: 构造 NDC 中的角落点 q
-		// 在 DirectX 中，NDC 的 Z 范围是 [0, 1]，近裁面对应 z = 0
-		Vector4 clipQ = new Vector4(
-			Math.Sign(viewC.X),  // x: ±1
-			Math.Sign(viewC.Y),  // y: ±1
-			0.0f,                // ✅ z = 0 表示近裁面（DirectX）
-			1.0f                 // w = 1
-		);
+        if (_taskScreenScene == null)
+        {
+            _taskScreenScene = new SceneRenderTask
+            {
+                Output = ScreenTexture,
+                Order = -98,
+                Camera = _screenCamera,
+                ViewLayersMask = ScreenLayer,
+                Enabled = false,
+            };
+        }
 
-		// Step 2: 将 NDC 的 q 点反变换到视图空间
-		Matrix invM = Matrix.Invert(M);
-		Vector4 viewQ = Vector4.Transform(clipQ, invM);
+        if (_taskScreenDepth == null)
+        {
+            _taskScreenDepth = new SceneRenderTask
+            {
+                Output = ScreenDepth,
+                Order = -97,
+                Camera = _screenCamera,
+                ViewLayersMask = ScreenLayer,
+                ViewMode = ViewMode.Depth,
+                Enabled = false,
+            };
+        }
 
-		// Step 3: 计算 dot(plane, viewQ)
-		float dotProduct = Vector4.Dot(viewC, viewQ);
+        _taskReflectionScene.PreRender += OnReflectionPreRender;
+        _taskReflectionScene.Enabled = true;
 
-		// ⚠️ 安全检查：防止除以零或极小值（这是“压缩成缝”的根本原因）
-		if (Math.Abs(dotProduct) < 1e-6f)
-		{
-			// 平面几乎与视线平行，避免数值爆炸
-			if(Engine.FrameCount %120 ==0) Debug.Log(0);
-			return M; // 返回原始投影矩阵
-		}
+        _taskSkyScene.PreRender += OnSkyPreRender;
+        _taskSkyScene.Enabled = true;
 
-		// Step 4: 计算修正向量 c = -2 * plane / dot(plane, viewQ)
-		float scale = -2.0f / dotProduct;
-		Vector4 c = scale * viewC;
+        _taskScreenScene.PreRender += OnScreenPreRender;
+        _taskScreenScene.Enabled = true;
 
-		// Step 5: 修改投影矩阵的第3列（Column3）——这是 DirectX 的关键！
-		M.Column3 = c;
-		if(Engine.FrameCount %120 ==0) Debug.Log(1);
-		return M;
-	}
-	private Matrix GetObliqueProjectionMatrix(Matrix projectionMatrix, Vector4 viewSpaceClipPlane)
-	{
-		Vector4 q = new(Math.Sign(viewSpaceClipPlane.X), Math.Sign(viewSpaceClipPlane.Y), -1f, 1f);
-		Vector4 c = viewSpaceClipPlane * (-2.0f / Vector4.Dot(viewSpaceClipPlane, q));
-		Matrix obliqueProj = projectionMatrix;
-		obliqueProj.Column3 = c;
-		return obliqueProj;
-	}
-	
+        _taskScreenDepth.PreRender += OnScreenDepthPreRender;
+        _taskScreenDepth.Enabled = true;
+
+        if (Material != null)
+        {
+            Material.SetParameterValue(ReflectionParamName, ReflectionTexture);
+            Material.SetParameterValue(SkyParamName, SkyTexture);
+            Material.SetParameterValue(ScreenParamName, ScreenTexture);
+            Material.SetParameterValue(ScreenDepthParamName, ScreenDepth);
+        }
+    }
+
+
+    public override void OnDisable()
+    {
+        if (_taskReflectionScene != null)
+        {
+            _taskReflectionScene.PreRender -= OnReflectionPreRender;
+            Destroy(ref _taskReflectionScene);
+        }
+        if (_taskSkyScene != null)
+        {
+            _taskSkyScene.PreRender -= OnSkyPreRender;
+            Destroy(ref _taskSkyScene);
+        }
+        if (_taskScreenScene != null)
+        {
+            _taskScreenScene.PreRender -= OnScreenPreRender;
+            Destroy(ref _taskScreenScene);
+        }
+        if (_taskScreenDepth != null)
+        {
+            _taskScreenDepth.PreRender -= OnScreenDepthPreRender;
+            Destroy(ref _taskScreenDepth);
+        }
+
+        Destroy(ref ReflectionTexture);
+        Destroy(ref SkyTexture);
+        Destroy(ref ScreenTexture);
+        Destroy(ref ScreenDepth);
+
+        // 释放反射相机
+        if (_reflectionCamera != null)
+        {
+            _reflectionCamera.Parent = null;
+            Destroy(ref _reflectionCamera);
+        }
+        if (_screenCamera != null)
+        {
+            _screenCamera.Parent = null;
+            Destroy(ref _screenCamera);
+        }
+    }
+
+    public override void OnUpdate()
+    {
+        _updateFrequencyCounter += UpdateFrequency;
+        if (_updateFrequencyCounter >= 1f)
+        {
+            _updateFrequencyCounter = 0f;
+            _taskReflectionScene?.Enabled = true;
+            _taskSkyScene?.Enabled = true;
+            _taskScreenScene?.Enabled = true;
+            _taskScreenDepth?.Enabled = true;
+        }
+        else
+        {
+            _taskReflectionScene?.Enabled = false;
+            _taskSkyScene?.Enabled = false;
+            _taskScreenScene?.Enabled = false;
+            _taskScreenDepth?.Enabled = false;
+        }
+    }
+
+    private void UpdateReflectionCamera()
+    {
+        Transform transform = MainCamera.Transform;
+
+        // 计算反射平面 (点法式)
+        Vector3 position = Actor.Position;
+        Vector3 normal = Actor.Transform.Up;
+        float d = -Vector3.Dot(normal, position) - ClipPlaneOffset;
+        _reflectionPlane = new Vector4(normal.X, normal.Y, normal.Z, d);
+
+        // 计算反射相机位姿
+        _reflectionCamera.Transform = ReflectionUtils.CalculateReflectionTransform(
+            transform, position, normal);
+        _screenCamera.Transform = transform;
+    }
+
+    private void OnReflectionPreRender(GPUContext context, ref RenderContext renderContext)
+    {
+        UpdateReflectionCamera();
+        Matrix reflectionViewMatrix = renderContext.View.View;
+        Matrix projectionMatrix = renderContext.View.Projection;
+        Matrix inverseTransposeViewMatrix = Matrix.Transpose(Matrix.Invert(reflectionViewMatrix));
+        Vector4 viewSpaceReflectionPlane = Vector4.Transform(
+            _reflectionPlane,
+            inverseTransposeViewMatrix
+        );
+        Matrix targetProjectionMatrix = ReflectionUtils.GetObliqueProjectionMatrix(
+            projectionMatrix,
+            viewSpaceReflectionPlane
+        );
+        renderContext.View.SetUp(ref reflectionViewMatrix, ref targetProjectionMatrix);
+
+        _reflectionCamera.RenderLayersMask = SkyLayer;
+        _reflectionCamera.RenderFlags = ViewFlags.DefaultGame;
+    }
+
+    private void OnSkyPreRender(GPUContext context, ref RenderContext renderContext)
+    {
+        Matrix refractionViewMatrix = renderContext.View.View;
+        Matrix projectionMatrix = renderContext.View.Projection;
+        renderContext.View.SetUp(ref refractionViewMatrix, ref projectionMatrix);
+
+        _screenCamera.RenderLayersMask = ScreenLayer;
+    }
+
+    private void OnScreenPreRender(GPUContext context, ref RenderContext renderContext)
+    {
+        Matrix refractionViewMatrix = renderContext.View.View;
+        Matrix projectionMatrix = renderContext.View.Projection;
+        renderContext.View.SetUp(ref refractionViewMatrix, ref projectionMatrix);
+
+        _screenCamera.RenderMode = ViewMode.Depth;
+        _reflectionCamera.RenderLayersMask = ReflectionLayers;
+        _reflectionCamera.RenderFlags = ReflectionViewFlags;
+    }
+
+    private void OnScreenDepthPreRender(GPUContext context, ref RenderContext renderContext)
+    {
+        Matrix refractionViewMatrix = renderContext.View.View;
+        Matrix projectionMatrix = renderContext.View.Projection;
+        renderContext.View.SetUp(ref refractionViewMatrix, ref projectionMatrix);
+        
+        _screenCamera.RenderMode = ViewMode.Default;
+        _reflectionCamera.RenderLayersMask = ReflectionLayers;
+    }
+
+    private void UpdateOutput()
+    {
+        if (ReflectionTexture)
+        {
+            GPUTextureDescription desc0 = GPUTextureDescription.New2D(
+                (int)_resolution.X,
+                (int)_resolution.Y,
+                PixelFormat.R8G8B8A8_UNorm
+            );
+            ReflectionTexture.Init(ref desc0);
+        }
+        if (SkyTexture)
+        {
+            GPUTextureDescription desc1 = GPUTextureDescription.New2D(
+                (int)_resolution.X,
+                (int)_resolution.Y,
+                PixelFormat.R8G8B8A8_UNorm
+            );
+            SkyTexture.Init(ref desc1);
+        }
+        if (ScreenTexture)
+        {
+            GPUTextureDescription desc2 = GPUTextureDescription.New2D(
+                (int)_resolution.X,
+                (int)_resolution.Y,
+                PixelFormat.R8G8B8A8_UNorm
+            );
+            ScreenTexture.Init(ref desc2);
+        }
+        if (ScreenDepth)
+        {
+            GPUTextureDescription desc3 = GPUTextureDescription.New2D(
+                (int)_resolution.X,
+                (int)_resolution.Y,
+                PixelFormat.R16_Float
+            );
+            ScreenDepth.Init(ref desc3);
+        }
+    }
 }

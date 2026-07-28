@@ -5,8 +5,8 @@
 		"gulp.autoDetect": "off",
 		"jake.autoDetect": "off",
 		"grunt.autoDetect": "off",
-		"omnisharp.useModernNet": true,
-		"dotnet.defaultSolution": "MyProject.sln"
+		"omnisharp.defaultLaunchSolution": "MyProject.sln",
+		"omnisharp.useModernNet": true
 	},
 	"folders": [
 		{
@@ -15,7 +15,7 @@
 		},
 		{
 			"name": "Flax",
-			"path": "F:\\FlaxEngine\\Flax_master"
+			"path": "C:\\Program Files (x86)\\Flax\\Flax_master"
 		}
 	]
 }

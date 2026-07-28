@@ -1,7 +1,7 @@
 {
 	"ID": "4eaf325e4cd72aa4cdeb6393cad05466",
 	"TypeName": "FlaxEditor.Content.Settings.GraphicsSettings",
-	"EngineBuild": 6705,
+	"EngineBuild": 6808,
 	"Data": {
 	"UseVSync": false,
 	"AAQuality": 1,
@@ -24,7 +24,7 @@
 	"PostProcessSettings": {
 		"AO": {
 			"OverrideFlags": 1,
-			"Enabled": false,
+			"Enabled": true,
 			"Intensity": 0.8,
 			"Power": 0.75,
 			"Radius": 0.7,

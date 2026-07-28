@@ -1,10 +1,10 @@
-# Interactive Water in Flax Engine 1.10
+# Interactive Water in Flax Engine 1.12
 <img width="1809" height="1124" alt="image" src="https://github.com/user-attachments/assets/da6c2c58-7be2-42fe-badf-cd8287da68c1" />
 
 A simple demo including the following content:
 1. HLSL compute shader to create ripple texture and calculate normal
 2. Planar reflection
-3. A noise texture generator to procedurally create normal texture
+3. A Rain Generator
 4. A water material with advanced screen space refraction
 
 ## Known Issues:

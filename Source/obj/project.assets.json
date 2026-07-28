@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\12847\\Downloads\\Flax_Engine_Interactive_Water-main\\Flax_Engine_Interactive_Water-main\\Source\\Game.csproj",
+      "projectUniqueName": "C:\\Users\\12847\\Documents\\GitHub\\Flax_Engine_Interactive_Water\\Source\\Game.csproj",
       "projectName": "Game.CSharp",
-      "projectPath": "C:\\Users\\12847\\Downloads\\Flax_Engine_Interactive_Water-main\\Flax_Engine_Interactive_Water-main\\Source\\Game.csproj",
+      "projectPath": "C:\\Users\\12847\\Documents\\GitHub\\Flax_Engine_Interactive_Water\\Source\\Game.csproj",
       "packagesPath": "C:\\Users\\12847\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\12847\\Downloads\\Flax_Engine_Interactive_Water-main\\Flax_Engine_Interactive_Water-main\\Source\\obj\\",
+      "outputPath": "C:\\Users\\12847\\Documents\\GitHub\\Flax_Engine_Interactive_Water\\Source\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\12847\\AppData\\Roaming\\NuGet\\NuGet.Config",

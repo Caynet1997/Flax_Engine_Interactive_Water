@@ -301,12 +301,14 @@
     <Compile Include="Game\DynamicTextureFromCode.cs" />
     <Compile Include="Game\ExitOnEsc.cs" />
     <Compile Include="Game\FreeCamera.cs" />
+    <Compile Include="Game\SimpleMoving.cs" />
     <Compile Include="Game\Trials\BuoyantObject.cs" />
     <Compile Include="Game\Trials\InteractiveWater.cs" />
+    <Compile Include="Game\Trials\MouseWaterInteraction.cs" />
     <Compile Include="Game\Trials\PerlinNoiseGenerator.cs" />
     <Compile Include="Game\Trials\PlanarReflection.cs" />
-    <Compile Include="Game\Trials\RainController.cs" />
     <Compile Include="Game\Trials\ReflectionUtils.cs" />
+    <Compile Include="Game\Trials\WaterInteraction.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Editor.Windows.Debug|x64' " >
     <Compile Visible="false" Include="C:\Users\12847\Documents\GitHub\Flax_Engine_Interactive_Water\Cache\Intermediate\GameEditorTarget\Windows\x64\Debug\Game\Game.Bindings.Gen.cs" />

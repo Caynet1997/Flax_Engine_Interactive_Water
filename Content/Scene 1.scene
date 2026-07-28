@@ -73,7 +73,7 @@
 			"Transform": {
 				"Translation": {
 					"X": 0.0,
-					"Y": -272.0,
+					"Y": -512.0,
 					"Z": 0.0
 				},
 				"Scale": {
@@ -180,12 +180,12 @@
 			"Transform": {
 				"Translation": {
 					"X": 0.0,
-					"Y": 0.0,
+					"Y": -343.37554931640625,
 					"Z": 4206.82080078125
 				},
 				"Scale": {
 					"X": 80.0,
-					"Y": 5.0,
+					"Y": 9.949999809265137,
 					"Z": 2.0
 				}
 			},
@@ -209,12 +209,12 @@
 			"Transform": {
 				"Translation": {
 					"X": 0.0,
-					"Y": 0.0,
-					"Z": -3600.0
+					"Y": -343.37554931640625,
+					"Z": -3756.978515625
 				},
 				"Scale": {
 					"X": 80.0,
-					"Y": 5.0,
+					"Y": 9.949999809265137,
 					"Z": 2.0
 				}
 			},
@@ -238,7 +238,7 @@
 			"Transform": {
 				"Translation": {
 					"X": -4000.0,
-					"Y": 0.0,
+					"Y": -343.37554931640625,
 					"Z": 250.0
 				},
 				"Orientation": {
@@ -249,7 +249,7 @@
 				},
 				"Scale": {
 					"X": 80.0,
-					"Y": 5.0,
+					"Y": 9.949999809265137,
 					"Z": 2.0
 				}
 			},
@@ -273,7 +273,7 @@
 			"Transform": {
 				"Translation": {
 					"X": 4000.0,
-					"Y": 0.0,
+					"Y": -343.37554931640625,
 					"Z": 200.0
 				},
 				"Orientation": {
@@ -284,7 +284,7 @@
 				},
 				"Scale": {
 					"X": 80.0,
-					"Y": 5.0,
+					"Y": 9.949999809265137,
 					"Z": 2.0
 				}
 			},
@@ -364,12 +364,6 @@
 			}
 		},
 		{
-			"ID": "e0c6a83e45f4e0c60534ca933105963d",
-			"TypeName": "Game.Game.Trials.RainController",
-			"ParentID": "bff04f6c4224784579fee2aa74e91170",
-			"V": {}
-		},
-		{
 			"ID": "b6240eb84900bc533dafaa927f7e33a4",
 			"TypeName": "Game.Game.Trials.InteractiveWater",
 			"ParentID": "bff04f6c4224784579fee2aa74e91170",
@@ -379,65 +373,10 @@
 	"Drag": 0.2,
 	"SimulateSpeed": 120.0,
 	"NormalStrength": 2.0,
-	"DetailStrength1": 0.15,
-	"DetailSpeed1": 0.3,
-	"DetailStrength2": 0.1,
-	"DetailSpeed2": -0.2,
-	"RainStrength": 0.10899166,
-	"TouchStrength": 1.0,
+	"WindStrength": 3.0,
+	"WindWaveHeight": 1.0,
+	"WindFoamAmount": 0.1,
 	"MeshSize": 8000.0,
-	"Quality": 1024,
-	"Preset": 1,
-	"Waves": [
-		{
-			"Direction": {
-				"X": -0.00040368637,
-				"Y": -0.99999994
-			},
-			"Wavelength": 700.0,
-			"Amplitude": 2.5,
-			"Speed": 0.3892555,
-			"Steepness": 0.5,
-			"Phase": 4.0918655,
-			"Pad": 0.0
-		},
-		{
-			"Direction": {
-				"X": 0.41105354,
-				"Y": 0.9116112
-			},
-			"Wavelength": 566.6666,
-			"Amplitude": 1.75,
-			"Speed": 0.29998657,
-			"Steepness": 0.5,
-			"Phase": 4.5954423,
-			"Pad": 0.0
-		},
-		{
-			"Direction": {
-				"X": -0.7481124,
-				"Y": -0.6635721
-			},
-			"Wavelength": 433.3333,
-			"Amplitude": 1.2249999,
-			"Speed": 0.34384707,
-			"Steepness": 0.5,
-			"Phase": 5.133196,
-			"Pad": 0.0
-		},
-		{
-			"Direction": {
-				"X": 0.9566416,
-				"Y": 0.2912676
-			},
-			"Wavelength": 300.0,
-			"Amplitude": 0.85749996,
-			"Speed": 0.24998145,
-			"Steepness": 0.5,
-			"Phase": 5.6590066,
-			"Pad": 0.0
-		}
-	],
 	"RippleShader": "00000b54ae58c3490000005700000065",
 	"WaterMaterial": "4ae30dd548a575baa1b017a97990237e"
 },
@@ -462,6 +401,12 @@
 	},
 	"ResolutionScale": 0.5
 }
+		},
+		{
+			"ID": "f8ab7c2941d9675748575db0d483282e",
+			"TypeName": "Game.Game.Trials.MouseWaterInteraction",
+			"ParentID": "bff04f6c4224784579fee2aa74e91170",
+			"V": {}
 		},
 		{
 			"ID": "c6bcf6e443aa212925776787320f6448",
@@ -555,6 +500,377 @@
 				"X": 102.0,
 				"Y": 102.0,
 				"Z": 102.0
+			}
+		},
+		{
+			"ID": "6228b7194fa68ca803ed8288660d344e",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "fa0ea6ea40b6023703c710a65e9f2d6b",
+			"Name": "EmptyActor",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 89.51182556152344,
+					"Z": 0.0
+				}
+			}
+		},
+		{
+			"ID": "490ef2494d49224dc8f04090e59b97e4",
+			"TypeName": "Game.Game.SimpleMoving",
+			"ParentID": "6228b7194fa68ca803ed8288660d344e",
+			"V": {
+	"MoveRange": {
+		"X": 3800.0,
+		"Y": 3800.0
+	},
+	"MoveSpeed": 600.0,
+	"TurnSpeed": 0.5
+}
+		},
+		{
+			"ID": "5847cb6544cbcd68c9047babe8b8b522",
+			"TypeName": "Game.Game.Trials.WaterInteraction",
+			"ParentID": "6228b7194fa68ca803ed8288660d344e",
+			"V": {
+	"Mode": 4,
+	"Strength": -10.0,
+	"Radius": 80.0
+}
+		},
+		{
+			"ID": "30691ec24bea2df79ff71a8bbfbc3c92",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "6228b7194fa68ca803ed8288660d344e",
+			"Name": "Cube",
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "5b6208a745d908fe82ab27b99853b4a4",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "fa0ea6ea40b6023703c710a65e9f2d6b",
+			"Name": "EmptyActor 0",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 89.51182556152344,
+					"Z": 0.0
+				}
+			}
+		},
+		{
+			"ID": "d5e246c947b75a9ddbe4bf8d48815f1a",
+			"TypeName": "Game.Game.SimpleMoving",
+			"ParentID": "5b6208a745d908fe82ab27b99853b4a4",
+			"V": {
+	"MoveRange": {
+		"X": 3800.0,
+		"Y": 3800.0
+	},
+	"MoveSpeed": 600.0,
+	"TurnSpeed": 0.5
+}
+		},
+		{
+			"ID": "1766c71a4248e4b46f960c88147113e4",
+			"TypeName": "Game.Game.Trials.WaterInteraction",
+			"ParentID": "5b6208a745d908fe82ab27b99853b4a4",
+			"V": {
+	"Mode": 4,
+	"Strength": -10.0,
+	"Radius": 80.0
+}
+		},
+		{
+			"ID": "8ca2197f4123c131ecd323b94ac04b61",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "5b6208a745d908fe82ab27b99853b4a4",
+			"Name": "Cube",
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "75dae942435000f63e8e7eb4e4b4e6f1",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "fa0ea6ea40b6023703c710a65e9f2d6b",
+			"Name": "EmptyActor 1",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 89.51182556152344,
+					"Z": 0.0
+				}
+			}
+		},
+		{
+			"ID": "6853c31e4f9ed07a26bfd3b4fc5f1fa3",
+			"TypeName": "Game.Game.SimpleMoving",
+			"ParentID": "75dae942435000f63e8e7eb4e4b4e6f1",
+			"V": {
+	"MoveRange": {
+		"X": 3800.0,
+		"Y": 3800.0
+	},
+	"MoveSpeed": 600.0,
+	"TurnSpeed": 0.5
+}
+		},
+		{
+			"ID": "0196cd4d49e64350ccb5198e95e47afe",
+			"TypeName": "Game.Game.Trials.WaterInteraction",
+			"ParentID": "75dae942435000f63e8e7eb4e4b4e6f1",
+			"V": {
+	"Mode": 4,
+	"Strength": -10.0,
+	"Radius": 80.0
+}
+		},
+		{
+			"ID": "bee391fb45269f25dcdb669f80ed76c3",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "75dae942435000f63e8e7eb4e4b4e6f1",
+			"Name": "Cube",
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "84bdbf504a63f82a5f8f2e8a1adf1102",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "fa0ea6ea40b6023703c710a65e9f2d6b",
+			"Name": "EmptyActor 2",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 89.51182556152344,
+					"Z": 0.0
+				}
+			}
+		},
+		{
+			"ID": "5ff879f144a9e680aaac6f80caf1fbc8",
+			"TypeName": "Game.Game.SimpleMoving",
+			"ParentID": "84bdbf504a63f82a5f8f2e8a1adf1102",
+			"V": {
+	"MoveRange": {
+		"X": 3800.0,
+		"Y": 3800.0
+	},
+	"MoveSpeed": 600.0,
+	"TurnSpeed": 0.5
+}
+		},
+		{
+			"ID": "962a70a14a58221042cfdaab4818743c",
+			"TypeName": "Game.Game.Trials.WaterInteraction",
+			"ParentID": "84bdbf504a63f82a5f8f2e8a1adf1102",
+			"V": {
+	"Mode": 4,
+	"Strength": -10.0,
+	"Radius": 80.0
+}
+		},
+		{
+			"ID": "62cad23e4bc5db0879a1a5b65693d12a",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "84bdbf504a63f82a5f8f2e8a1adf1102",
+			"Name": "Cube",
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "25161449475a0c5d1fb82fa0e490a902",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "fa0ea6ea40b6023703c710a65e9f2d6b",
+			"Name": "EmptyActor 3",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 89.51182556152344,
+					"Z": 0.0
+				}
+			}
+		},
+		{
+			"ID": "98474d064bf1b3bc16489e87332c20ed",
+			"TypeName": "Game.Game.SimpleMoving",
+			"ParentID": "25161449475a0c5d1fb82fa0e490a902",
+			"V": {
+	"MoveRange": {
+		"X": 3800.0,
+		"Y": 3800.0
+	},
+	"MoveSpeed": 600.0,
+	"TurnSpeed": 0.5
+}
+		},
+		{
+			"ID": "a5e811f7427a9a4d2ad4e5a620833ca1",
+			"TypeName": "Game.Game.Trials.WaterInteraction",
+			"ParentID": "25161449475a0c5d1fb82fa0e490a902",
+			"V": {
+	"Mode": 4,
+	"Strength": -10.0,
+	"Radius": 80.0
+}
+		},
+		{
+			"ID": "7818b28e477ac8d200c954a047bcce5a",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "25161449475a0c5d1fb82fa0e490a902",
+			"Name": "Cube",
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "e947aa524adaf83ccb85dbaa0d9ef596",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "fa0ea6ea40b6023703c710a65e9f2d6b",
+			"Name": "EmptyActor 4",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 89.51182556152344,
+					"Z": 0.0
+				}
+			}
+		},
+		{
+			"ID": "9343f211479eaee8c9c6cd84ca222f4d",
+			"TypeName": "Game.Game.SimpleMoving",
+			"ParentID": "e947aa524adaf83ccb85dbaa0d9ef596",
+			"V": {
+	"MoveRange": {
+		"X": 3800.0,
+		"Y": 3800.0
+	},
+	"MoveSpeed": 600.0,
+	"TurnSpeed": 0.5
+}
+		},
+		{
+			"ID": "1ad7acb64e05a861c25e20a3528186e6",
+			"TypeName": "Game.Game.Trials.WaterInteraction",
+			"ParentID": "e947aa524adaf83ccb85dbaa0d9ef596",
+			"V": {
+	"Mode": 4,
+	"Strength": -10.0,
+	"Radius": 80.0
+}
+		},
+		{
+			"ID": "e206861b4fd4aa1c4128eaaccccb598f",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "e947aa524adaf83ccb85dbaa0d9ef596",
+			"Name": "Cube",
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
+			}
+		},
+		{
+			"ID": "1d45f12b40e94a4d777a0db9e6f93fd0",
+			"TypeName": "FlaxEngine.EmptyActor",
+			"ParentID": "fa0ea6ea40b6023703c710a65e9f2d6b",
+			"Name": "EmptyActor 5",
+			"Transform": {
+				"Translation": {
+					"X": 0.0,
+					"Y": 89.51182556152344,
+					"Z": 0.0
+				}
+			}
+		},
+		{
+			"ID": "28578f4547fdb22d7fe09e8c41e20d4e",
+			"TypeName": "Game.Game.SimpleMoving",
+			"ParentID": "1d45f12b40e94a4d777a0db9e6f93fd0",
+			"V": {
+	"MoveRange": {
+		"X": 3800.0,
+		"Y": 3800.0
+	},
+	"MoveSpeed": 600.0,
+	"TurnSpeed": 0.5
+}
+		},
+		{
+			"ID": "fd113755499fafa9d0ab838cb25763f5",
+			"TypeName": "Game.Game.Trials.WaterInteraction",
+			"ParentID": "1d45f12b40e94a4d777a0db9e6f93fd0",
+			"V": {
+	"Mode": 4,
+	"Strength": -10.0,
+	"Radius": 80.0
+}
+		},
+		{
+			"ID": "e332009947e961497b5f5aa135d7baeb",
+			"TypeName": "FlaxEngine.StaticModel",
+			"ParentID": "1d45f12b40e94a4d777a0db9e6f93fd0",
+			"Name": "Cube",
+			"Model": "b43f0f8f4aaba3f3156896a5a22ba493",
+			"Buffer": {
+				"Entries": [
+					{
+						"Material": "00000000000000000000000000000000",
+						"ShadowsMode": 3,
+						"Visible": true,
+						"ReceiveDecals": true
+					}
+				]
 			}
 		}
 	]

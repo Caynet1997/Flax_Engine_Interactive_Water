@@ -27,38 +27,9 @@ public enum WaterBoundaryMode
 }
 
 /// <summary>
-/// Gerstner 环境浪预设: 自动生成一组自然波浪, 无需手动配置每个波。
-/// </summary>
-public enum WaterPreset
-{
-    Custom = 0,     // 使用手动配置的 Waves 数组
-    CalmLake,       // 平静湖泊: 小幅缓波
-    Ocean,          // 海洋: 中等涌浪
-    StormySea,      // 风暴海: 大幅混乱波
-    CoastalShore,   // 海岸: 定向拍岸浪
-}
-
-/// <summary>
-/// Gerstner 环境浪参数 (CPU/GPU 共用同一公式, 保证渲染与浮力一致)。
-/// 内存布局 32 字节 (8 float), 与 shader 结构体一致。
-/// </summary>
-[Serializable]
-[StructLayout(LayoutKind.Sequential)]
-public struct GerstnerWave
-{
-    public Float2 Direction;  // 归一化传播方向 (XZ)
-    public float Wavelength;  // 波长
-    public float Amplitude;   // 振幅
-    public float Speed;       // 角频率 (相位移动速度)
-    public float Steepness;   // 陡度 (保留)
-    public float Phase;       // 初始相位
-    [HideInEditor]
-    public float Pad;
-}
-
-/// <summary>
 /// 交互式 2D 流体水面: 基于浅水方程 (SWE) 的 GPU 模拟。
-/// 高度场 h 与速度场 (u,v) 耦合, 支持波传播/反射、水流汇聚、多触点交互、泡沫与多尺度法线。
+/// 高度场 h 与速度场 (u,v) 耦合, 支持波传播/反射、水流汇聚、力场交互、泡沫与高度场法线。
+/// 交互通过 StructuredBuffer 力条目实现 (最多 256 个/帧), 支持径向冲量/方向力/漩涡/吸引排斥/高度修改/泡沫注入。
 /// </summary>
 public class InteractiveWater : PostProcessEffect
 {
@@ -67,9 +38,10 @@ public class InteractiveWater : PostProcessEffect
     // ---------------------------------------------------------
     private const int ThreadGroupSize = 8;
     private const float MaxAccumulatedTime = 0.1f; // 防止螺旋死亡
-    private const int MaxTouches = 16;             // 多触点上限
-    private const int DetailNormalSize = 512;      // 预计算细节法线纹理尺寸
-    public const int MaxWaves = 8;                 // Gerstner 环境浪上限
+    private const int MaxForces = 256;             // 每帧最大力条目数
+    private const int ForceEntrySize = 40;         // ForceEntry 结构体字节数
+    private const int HeightCacheSize = 128;       // CPU 高度缓存分辨率
+    private const int HeightReadbackInterval = 4;  // 每 N 帧回读一次高度
 
     // ---------------------------------------------------------
     // 流体物理参数 (编辑器可调)
@@ -100,24 +72,6 @@ public class InteractiveWater : PostProcessEffect
     [Tooltip("Height-field normal strength"), Limit(0.0f, 20.0f, 0.01f)]
     public float NormalStrength = 1.0f;
 
-    [Tooltip("Detail noise layer 1 scale"), Limit(1.0f, 512.0f, 1.0f)]
-    public float DetailScale1 = 64.0f;
-
-    [Tooltip("Detail noise layer 1 strength"), Limit(0.0f, 5.0f, 0.01f)]
-    public float DetailStrength1 = 0.5f;
-
-    [Tooltip("Detail noise layer 1 flow speed"), Limit(-10.0f, 10.0f, 0.01f)]
-    public float DetailSpeed1 = 1.0f;
-
-    [Tooltip("Detail noise layer 2 scale"), Limit(1.0f, 512.0f, 1.0f)]
-    public float DetailScale2 = 128.0f;
-
-    [Tooltip("Detail noise layer 2 strength"), Limit(0.0f, 5.0f, 0.01f)]
-    public float DetailStrength2 = 0.3f;
-
-    [Tooltip("Detail noise layer 2 flow speed"), Limit(-10.0f, 10.0f, 0.01f)]
-    public float DetailSpeed2 = -0.7f;
-
     // ---------------------------------------------------------
     // 泡沫参数
     // ---------------------------------------------------------
@@ -128,48 +82,43 @@ public class InteractiveWater : PostProcessEffect
     [Tooltip("Foam decay rate"), Limit(0.0f, 10.0f, 0.01f)]
     public float FoamDecay = 0.5f;
 
-    [Tooltip("Rain strength (0 = off)"), Limit(0.0f, 5.0f, 0.01f)]
-    public float RainStrength = 0.0f;
-
     [Tooltip("Seconds to keep simulating after last activity before idling"), Limit(0.0f, 30.0f, 0.5f)]
     public float IdleSettleTime = 8.0f;
 
     // ---------------------------------------------------------
-    // 边界与交互
+    // 全局风力 (风向由 shader 内噪声场逐位置动态计算)
+    // ---------------------------------------------------------
+
+    [Tooltip("Wind strength (acceleration, 0 = off)"), Limit(0.0f, 50.0f, 0.1f)]
+    public float WindStrength = 0.0f;
+
+    [Tooltip("Gust modulation amount (0 = steady wind)"), Limit(0.0f, 2.0f, 0.01f)]
+    public float WindGustAmount = 0.8f;
+
+    [Tooltip("Gust spatial frequency (per texel)"), Limit(0.001f, 0.5f, 0.001f)]
+    public float WindNoiseScale = 0.02f;
+
+    [Tooltip("Gust drift speed"), Limit(0.0f, 20.0f, 0.1f)]
+    public float WindGustSpeed = 3.0f;
+
+    [Tooltip("Wind wave height coupling (gust pressure -> surface deformation)"), Limit(0.0f, 5.0f, 0.05f)]
+    public float WindWaveHeight = 0.8f;
+
+    [Tooltip("Wind-driven foam (whitecaps) generation rate"), Limit(0.0f, 5.0f, 0.05f)]
+    public float WindFoamAmount = 0.5f;
+
+    // ---------------------------------------------------------
+    // 边界与网格
     // ---------------------------------------------------------
 
     [Tooltip("Boundary condition mode")]
     public WaterBoundaryMode Boundary = WaterBoundaryMode.Solid;
-
-    [Tooltip("Touch impulse radius (in texels)"), Limit(1.0f, 200.0f, 1.0f)]
-    public float TouchRadius = 20.0f;
-
-    [Tooltip("Touch impulse strength"), Limit(0.0f, 100.0f, 0.1f)]
-    public float TouchStrength = 5.0f;
 
     [Tooltip("World-space size of the water mesh")]
     public float MeshSize = 500f;
 
     [Tooltip("Simulation texture resolution")]
     public WaterQualityLevel Quality = WaterQualityLevel.High;
-
-    // ---------------------------------------------------------
-    // Gerstner 环境浪 (预设自动生成 或 手动配置)
-    // ---------------------------------------------------------
-
-    [Tooltip("Wave preset (auto-generates Waves). Use Custom to edit Waves manually.")]
-    public WaterPreset Preset = WaterPreset.Ocean;
-
-    [Tooltip("Gerstner ambient waves (up to 8). Auto-filled by Preset, or edit when Preset=Custom.")]
-    public GerstnerWave[] Waves =
-    {
-        new GerstnerWave { Direction = new Float2(1.0f, 0.2f), Wavelength = 800f, Amplitude = 6f, Speed = 1.2f, Steepness = 0.5f, Phase = 0f },
-        new GerstnerWave { Direction = new Float2(-0.4f, 1.0f), Wavelength = 400f, Amplitude = 7f, Speed = 1.8f, Steepness = 0.5f, Phase = 1.3f },
-        new GerstnerWave { Direction = new Float2(0.7f, -0.7f), Wavelength = 200f, Amplitude = 4f, Speed = 0.5f, Steepness = 0.5f, Phase = 2.7f },
-        new GerstnerWave { Direction = new Float2(0.3f, 0.2f), Wavelength = 700f, Amplitude = 3f, Speed = 0.2f, Steepness = 0.5f, Phase = 3.3f },
-        new GerstnerWave { Direction = new Float2(-0.7f, -0.3f), Wavelength = 500f, Amplitude = 7f, Speed = 0.8f, Steepness = 0.5f, Phase = 4.3f },
-        new GerstnerWave { Direction = new Float2(0.1f, 0.8f), Wavelength = 300f, Amplitude = 5, Speed = 0.5f, Steepness = 0.5f, Phase = 5.7f },
-    };
 
     // ---------------------------------------------------------
     // 资源引用
@@ -184,6 +133,22 @@ public class InteractiveWater : PostProcessEffect
     // 内部状态
     // ---------------------------------------------------------
 
+    // 力条目结构体 (与 shader ForceEntry 布局一致, 40 字节)
+    // 注意: HLSL 中 float2 按 8 字节对齐, 结构体步长补齐到 40;
+    //       C# 的 Float2 对齐为 4, 需显式补 Pad 使 sizeof == 40, 否则 GPU 按 40 步长读取会错位。
+    [StructLayout(LayoutKind.Sequential)]
+    private struct ForceEntry
+    {
+        public Float2 Center;     // 纹理空间中心 (offset 0)
+        public float Radius;      // 纹理空间半径 (offset 8)
+        public float Strength;    // 强度 (offset 12)
+        public Float2 Direction;  // 方向 (offset 16)
+        public float HeightAmt;   // 高度修改量 (offset 24)
+        public float FoamAmt;     // 泡沫量 (offset 28)
+        public float Type;        // 0=Radial 1=Directional 2=Vortex 3=Attractor 4=Height 5=Foam (offset 32)
+        public float Pad;         // 对齐填充 (offset 36) → sizeof == 40
+    }
+
     // 常量缓冲数据 (布局必须与 shader 的 SimData 完全一致)
     [StructLayout(LayoutKind.Sequential)]
     private struct SimData
@@ -195,49 +160,40 @@ public class InteractiveWater : PostProcessEffect
         public float AdvectionStrength;
         public float DeltaTime;
         public float TexelSize;
-        public float TouchCount;
         public float NormalStrength;
-        public float DetailScale1;
-        public float DetailStrength1;
-        public float DetailSpeed1;
-        public float DetailScale2;
-        public float DetailStrength2;
-        public float DetailSpeed2;
-        public float Time;
         public float FoamGeneration;
         public float FoamDecay;
         public float BoundaryMode;
-        public float RainStrength;
-        public Float2 TouchPosition;
-        public float TouchRadius;
-        public float TouchStrength;
-        public float WaveCount;
-        public float MeshSize;
-        public float WaterOriginX;
-        public float WaterOriginZ;
+        public float Time;
+        public float ForceCount;
+        public float WindStrength;
+        public float WindGustAmount;
+        public float WindNoiseScale;
+        public float WindGustSpeed;
+        public float WindWaveHeight;
+        public float WindFoamAmount;
     }
 
     private bool _isComputeSupported;
-    public GPUTexture _stateA;       // (h, u, v, foam)
-    public GPUTexture _stateB;
-    public GPUTexture _normalField;
-    private GPUTexture _detailNormalTex; // 预计算可平铺细节法线
-    private bool _detailNormalGenerated;
-    private GPUBuffer _touchBuffer;  // StructuredBuffer<float4> 多触点
-    private GPUBuffer _waveBuffer;   // StructuredBuffer<GerstnerWave> 环境浪
-    private readonly Float4[] _touchData = new Float4[MaxTouches];
-    private readonly GerstnerWave[] _waveData = new GerstnerWave[MaxWaves];
-    private WaterPreset _lastPreset;
+    private GPUTexture _stateA;       // (h, u, v, foam)
+    private GPUTexture _stateB;
+    private GPUTexture _normalField;
+    private GPUBuffer _forceBuffer;   // StructuredBuffer<ForceEntry>
     private bool _pingPongFlip;
     private float _accumulator;
     private int _textureSize;
     private bool _cflWarned;
-    private Float2 _cbTouchPosition;
-    private float _cbTouchStrength;
     private double _lastActivityTime;
-    private readonly List<Float4> _objectTouches = new List<Float4>();
 
-    /// <summary>全局实例, 供 BuoyantObject 等交互组件访问</summary>
+    // 力条目 CPU 累积列表 (每帧清空 → 各交互源写入 → 上传 GPU)
+    private readonly List<ForceEntry> _forceEntries = new List<ForceEntry>(MaxForces);
+    private readonly ForceEntry[] _forceUploadData = new ForceEntry[MaxForces];
+
+    // 高度缓存 (CPU 端)
+    private float[] _heightCache;
+    private int _frameCounter;
+
+    /// <summary>全局实例, 供交互组件访问</summary>
     public static InteractiveWater Instance { get; private set; }
 
     /// <summary>水面基准高度 (世界 Y, 不含波浪)</summary>
@@ -247,7 +203,6 @@ public class InteractiveWater : PostProcessEffect
     // 属性
     // ---------------------------------------------------------
 
-    public Float2 TouchPosition { get; private set; }
     public int TextureSize => _textureSize;
 
     // ---------------------------------------------------------
@@ -256,17 +211,23 @@ public class InteractiveWater : PostProcessEffect
 
     public override void OnEnable()
     {
+        // 布局安全校验: C# ForceEntry 大小必须与 shader 步长一致, 否则多力条目会错位
+        int entrySize = Marshal.SizeOf<ForceEntry>();
+        if (entrySize != ForceEntrySize)
+            Debug.LogError($"[InteractiveWater] ForceEntry 布局不匹配: C#={entrySize} bytes, shader={ForceEntrySize} bytes, 交互将失效!");
+
         _textureSize = (int)Quality;
         _pingPongFlip = false;
         _accumulator = 0f;
         _cflWarned = false;
         _lastActivityTime = Time.GameTime;
+        _frameCounter = 0;
 
         // 状态纹理: RGBA16F 承载 (h, u, v, foam), Ping-Pong 双缓冲
         _stateA = CreateStateTexture(_textureSize);
         _stateB = CreateStateTexture(_textureSize);
 
-        // 多尺度法线输出纹理
+        // 法线输出纹理
         _normalField = new GPUTexture();
         GPUTextureDescription normalDesc = GPUTextureDescription.New2D(
             _textureSize,
@@ -276,28 +237,14 @@ public class InteractiveWater : PostProcessEffect
         );
         _normalField.Init(ref normalDesc);
 
-        // 预计算可平铺细节法线纹理 (启动时生成一次, 替代每帧 FBM)
-        _detailNormalTex = new GPUTexture();
-        GPUTextureDescription detailDesc = GPUTextureDescription.New2D(
-            DetailNormalSize,
-            DetailNormalSize,
-            PixelFormat.R11G11B10_Float,
-            GPUTextureFlags.UnorderedAccess | GPUTextureFlags.ShaderResource
-        );
-        _detailNormalTex.Init(ref detailDesc);
-        _detailNormalGenerated = false;
+        // 力条目结构化缓冲 (Dynamic, 每帧 CPU 上传)
+        _forceBuffer = new GPUBuffer();
+        GPUBufferDescription forceDesc = GPUBufferDescription.Structured(MaxForces, ForceEntrySize, false);
+        forceDesc.Usage = GPUResourceUsage.Dynamic;
+        _forceBuffer.Init(ref forceDesc);
 
-        // 多触点结构化缓冲 (动态, 每帧 CPU 更新)
-        _touchBuffer = new GPUBuffer();
-        GPUBufferDescription touchDesc = GPUBufferDescription.Structured(MaxTouches, 16, false);
-        touchDesc.Usage = GPUResourceUsage.Dynamic;
-        _touchBuffer.Init(ref touchDesc);
-
-        // Gerstner 环境浪结构化缓冲 (32 字节/波)
-        _waveBuffer = new GPUBuffer();
-        GPUBufferDescription waveDesc = GPUBufferDescription.Structured(MaxWaves, 32, false);
-        waveDesc.Usage = GPUResourceUsage.Dynamic;
-        _waveBuffer.Init(ref waveDesc);
+        // 高度缓存
+        _heightCache = new float[HeightCacheSize * HeightCacheSize];
 
         // 绑定材质参数
         if (WaterMaterial)
@@ -310,12 +257,6 @@ public class InteractiveWater : PostProcessEffect
         MainRenderTask.Instance.AddCustomPostFx(this);
 
         Instance = this;
-
-        // 应用波浪预设 (非 Custom 时自动生成 Waves + 细节噪声参数)
-        _lastPreset = Preset;
-        if (Preset != WaterPreset.Custom)
-            ApplyPreset(Preset);
-
         ValidateCFL();
     }
 
@@ -331,17 +272,6 @@ public class InteractiveWater : PostProcessEffect
         if (Instance == this)
             Instance = null;
         ReleaseBuffers();
-    }
-
-    public override void OnUpdate()
-    {
-        // 预设切换时重新生成波浪 + 细节噪声参数 (Custom 保留手动编辑)
-        if (Preset != _lastPreset)
-        {
-            _lastPreset = Preset;
-            if (Preset != WaterPreset.Custom)
-                ApplyPreset(Preset);
-        }
     }
 
     public override bool CanRender()
@@ -363,33 +293,33 @@ public class InteractiveWater : PostProcessEffect
         GPUTexture output
     )
     {
-        // 收集本帧触点 (鼠标 + 物体入水)
-        int touchCount = CollectTouches();
+        _frameCounter++;
 
-        // 活跃度跟踪: 有触点或下雨时视为活跃
-        bool hasActivity = touchCount > 0 || RainStrength > 0.001f;
-        if (hasActivity)
+        // 活跃度跟踪 (有力条目或风力时视为活跃)
+        int forceCount = _forceEntries.Count;
+        bool hasWind = WindStrength > 0.0001f;
+        if (forceCount > 0 || hasWind)
             _lastActivityTime = FlaxEngine.Time.GameTime;
         bool isActive = (FlaxEngine.Time.GameTime - _lastActivityTime) < IdleSettleTime;
+
+        // 上传力条目缓冲
+        UploadForceBuffer(context, forceCount);
 
         // 固定时间步长累加器
         float frameTime = Mathf.Min(Time.DeltaTime, MaxAccumulatedTime);
         _accumulator += frameTime;
 
         float fixedStep = 1.0f / SimulateSpeed;
-        bool simulated = false;
-        bool firstStep = true;
 
-        // 静止时跳过模拟 (水面已平息), 节省 GPU; 法线 Pass 仍运行以保持细节流动
         if (isActive)
         {
+            bool firstStep = true;
             while (_accumulator >= fixedStep)
             {
-                // 触点冲量仅在首个子步施加一次, 保证帧率无关
-                DispatchSimulation(context, fixedStep, firstStep ? touchCount : 0);
+                // 力仅在首个子步施加 (通过 ForceCount 控制)
+                DispatchSimulation(context, fixedStep, firstStep ? forceCount : 0);
                 firstStep = false;
                 _accumulator -= fixedStep;
-                simulated = true;
 
                 if (_accumulator > fixedStep * 3)
                 {
@@ -403,89 +333,201 @@ public class InteractiveWater : PostProcessEffect
             _accumulator = 0f;
         }
 
-        // 法线 Pass 每帧都运行 (静止时保持细节噪声流动)
+        // 法线 Pass 每帧运行
         DispatchNormals(context);
 
         // 更新材质引用的最新状态纹理
         GPUTexture readTexture = _pingPongFlip ? _stateB : _stateA;
         if (WaterMaterial)
             WaterMaterial.SetParameterValue(RippleTextureParam, readTexture);
+
+        // 清空力条目 (为下一帧准备)
+        _forceEntries.Clear();
+    }
+
+    // ---------------------------------------------------------
+    // 公开交互 API
+    // ---------------------------------------------------------
+
+    /// <summary>
+    /// 径向冲量 (爆炸/入水浪花): 从中心向外推挤水面并下压。
+    /// </summary>
+    public void AddRadialImpulse(Vector3 worldPos, float strength, float worldRadius)
+    {
+        if (strength <= 0.001f || _forceEntries.Count >= MaxForces) return;
+        _forceEntries.Add(new ForceEntry
+        {
+            Center = WorldToTexel(worldPos),
+            Radius = Mathf.Max(worldRadius / MeshSize * _textureSize, 1.0f),
+            Strength = strength,
+            Direction = Float2.Zero,
+            HeightAmt = 0f,
+            FoamAmt = 0f,
+            Type = 0f,
+        });
+        MarkActivity();
+    }
+
+    /// <summary>
+    /// 方向力 (水流/风推动): 在区域内施加统一方向的速度冲量。
+    /// </summary>
+    public void AddDirectionalForce(Vector3 worldPos, Float2 direction, float strength, float worldRadius)
+    {
+        if (strength <= 0.001f || _forceEntries.Count >= MaxForces) return;
+        Float2 dir = direction.Length > 0.0001f ? direction.Normalized : new Float2(1.0f, 0.0f);
+        _forceEntries.Add(new ForceEntry
+        {
+            Center = WorldToTexel(worldPos),
+            Radius = Mathf.Max(worldRadius / MeshSize * _textureSize, 1.0f),
+            Strength = strength,
+            Direction = dir,
+            HeightAmt = 0f,
+            FoamAmt = 0f,
+            Type = 1f,
+        });
+        MarkActivity();
+    }
+
+    /// <summary>
+    /// 漩涡 (旋转力场): 在区域内施加切线方向力, 形成旋转水流。
+    /// </summary>
+    public void AddVortex(Vector3 worldPos, float angularStrength, float worldRadius)
+    {
+        if (Mathf.Abs(angularStrength) <= 0.001f || _forceEntries.Count >= MaxForces) return;
+        _forceEntries.Add(new ForceEntry
+        {
+            Center = WorldToTexel(worldPos),
+            Radius = Mathf.Max(worldRadius / MeshSize * _textureSize, 1.0f),
+            Strength = angularStrength,
+            Direction = Float2.Zero,
+            HeightAmt = 0f,
+            FoamAmt = 0f,
+            Type = 2f,
+        });
+        MarkActivity();
+    }
+
+    /// <summary>
+    /// 吸引/排斥: 正=吸引 (水面向中心汇聚), 负=排斥 (水面向外散开)。
+    /// </summary>
+    public void AddAttractor(Vector3 worldPos, float strength, float worldRadius)
+    {
+        if (Mathf.Abs(strength) <= 0.001f || _forceEntries.Count >= MaxForces) return;
+        _forceEntries.Add(new ForceEntry
+        {
+            Center = WorldToTexel(worldPos),
+            Radius = Mathf.Max(worldRadius / MeshSize * _textureSize, 1.0f),
+            Strength = strength,
+            Direction = Float2.Zero,
+            HeightAmt = 0f,
+            FoamAmt = 0f,
+            Type = 3f,
+        });
+        MarkActivity();
+    }
+
+    /// <summary>
+    /// 高度修改 (正=注水隆起, 负=排水凹陷)。
+    /// </summary>
+    public void AddHeightModifier(Vector3 worldPos, float amount, float worldRadius)
+    {
+        if (Mathf.Abs(amount) <= 0.001f || _forceEntries.Count >= MaxForces) return;
+        _forceEntries.Add(new ForceEntry
+        {
+            Center = WorldToTexel(worldPos),
+            Radius = Mathf.Max(worldRadius / MeshSize * _textureSize, 1.0f),
+            Strength = 0f,
+            Direction = Float2.Zero,
+            HeightAmt = amount,
+            FoamAmt = 0f,
+            Type = 4f,
+        });
+        MarkActivity();
+    }
+
+    /// <summary>
+    /// 泡沫注入源。
+    /// </summary>
+    public void AddFoamSource(Vector3 worldPos, float amount, float worldRadius)
+    {
+        if (amount <= 0.001f || _forceEntries.Count >= MaxForces) return;
+        _forceEntries.Add(new ForceEntry
+        {
+            Center = WorldToTexel(worldPos),
+            Radius = Mathf.Max(worldRadius / MeshSize * _textureSize, 1.0f),
+            Strength = 0f,
+            Direction = Float2.Zero,
+            HeightAmt = 0f,
+            FoamAmt = amount,
+            Type = 5f,
+        });
+        MarkActivity();
+    }
+
+    /// <summary>
+    /// 查询指定世界位置的水面高度 (基准高度 + 高度场)。
+    /// </summary>
+    public float GetWaterHeight(Vector3 worldPos)
+    {
+        if (_heightCache == null)
+            return WaterSurfaceY;
+
+        float u = (worldPos.X + MeshSize * 0.5f - Actor.Position.X) / MeshSize;
+        float v = (-worldPos.Z + MeshSize * 0.5f + Actor.Position.Z) / MeshSize;
+
+        if (u < 0f || u > 1f || v < 0f || v > 1f)
+            return WaterSurfaceY;
+
+        float fx = u * (HeightCacheSize - 1);
+        float fy = v * (HeightCacheSize - 1);
+        int ix = Mathf.Clamp(Mathf.FloorToInt(fx), 0, HeightCacheSize - 2);
+        int iy = Mathf.Clamp(Mathf.FloorToInt(fy), 0, HeightCacheSize - 2);
+        float tx = fx - ix;
+        float ty = fy - iy;
+
+        float h00 = _heightCache[iy * HeightCacheSize + ix];
+        float h10 = _heightCache[iy * HeightCacheSize + ix + 1];
+        float h01 = _heightCache[(iy + 1) * HeightCacheSize + ix];
+        float h11 = _heightCache[(iy + 1) * HeightCacheSize + ix + 1];
+
+        float h = Mathf.Lerp(Mathf.Lerp(h00, h10, tx), Mathf.Lerp(h01, h11, tx), ty);
+        return WaterSurfaceY + h;
+    }
+
+    /// <summary>
+    /// 世界坐标转纹理坐标 (texel)。
+    /// </summary>
+    public Float2 WorldToTexel(Vector3 worldPos)
+    {
+        return new Float2(
+            (worldPos.X + MeshSize * 0.5f - Actor.Position.X) / MeshSize * _textureSize,
+            (-worldPos.Z + MeshSize * 0.5f + Actor.Position.Z) / MeshSize * _textureSize
+        );
     }
 
     // ---------------------------------------------------------
     // 内部方法
     // ---------------------------------------------------------
 
-    /// <summary>
-    /// 收集触点 (纹理空间)。返回触点数量; 同时填充 _touchData 与 CB 单触点回退字段。
-    /// </summary>
-    private int CollectTouches()
+    private void MarkActivity()
     {
-        int count = 0;
-        TouchPosition = Float2.Zero;
-        float cbStrength = 0f;
-
-        if (Input.GetMouseButton(MouseButton.Left))
-        {
-            var mainCam = Camera.MainCamera;
-            if (mainCam != null)
-            {
-                var ray = mainCam.ConvertMouseToRay(Input.MousePosition);
-                if (Physics.RayCast(ray.Position, ray.Direction, out var hitInfo))
-                {
-                    var worldToUV = new Float2(
-                        hitInfo.Point.X + MeshSize * 0.5f - Actor.Position.X,
-                        -hitInfo.Point.Z + MeshSize * 0.5f + Actor.Position.Z
-                    );
-                    Float2 texelPos = worldToUV / MeshSize * _textureSize;
-                    TouchPosition = texelPos;
-                    cbStrength = TouchStrength;
-
-                    if (count < MaxTouches)
-                    {
-                        _touchData[count] = new Float4(texelPos.X, texelPos.Y, TouchStrength, TouchRadius);
-                        count++;
-                    }
-                }
-            }
-        }
-
-        // CB 单触点回退字段 (当结构化缓冲不可用 / TouchCount==0 时使用)
-        _cbTouchPosition = TouchPosition;
-        _cbTouchStrength = cbStrength;
-
-        // 收集物体交互触点 (BuoyantObject 等本帧注入的冲量)
-        for (int i = 0; i < _objectTouches.Count && count < MaxTouches; i++)
-        {
-            _touchData[count] = _objectTouches[i];
-            count++;
-        }
-        _objectTouches.Clear();
-
-        // 若结构化缓冲不可用, 返回 0 让 shader 走 CB 回退路径
-        return _touchBuffer != null ? count : 0;
+        _lastActivityTime = FlaxEngine.Time.GameTime;
     }
 
-    /// <summary>
-    /// 由交互组件调用: 注入一个物体触点 (世界坐标自动换算为纹理坐标)。
-    /// </summary>
-    /// <param name="worldPos">物体世界位置</param>
-    /// <param name="strength">冲量强度</param>
-    /// <param name="worldRadius">影响半径 (世界单位)</param>
-    public void AddObjectTouch(Vector3 worldPos, float strength, float worldRadius)
+    private unsafe void UploadForceBuffer(GPUContext context, int count)
     {
-        if (strength <= 0.001f)
-            return;
-        var worldToUV = new Float2(
-            worldPos.X + MeshSize * 0.5f - Actor.Position.X,
-            -worldPos.Z + MeshSize * 0.5f + Actor.Position.Z
-        );
-        Float2 texelPos = worldToUV / MeshSize * _textureSize;
-        float texelRadius = Mathf.Max(worldRadius / MeshSize * _textureSize, 1.0f);
-        _objectTouches.Add(new Float4(texelPos.X, texelPos.Y, strength, texelRadius));
+        if (_forceBuffer == null || count <= 0) return;
+
+        for (int i = 0; i < count; i++)
+            _forceUploadData[i] = _forceEntries[i];
+
+        fixed (ForceEntry* ptr = _forceUploadData)
+        {
+            context.UpdateBuffer(_forceBuffer, new IntPtr(ptr), (uint)(count * ForceEntrySize));
+        }
     }
 
-    private SimData BuildSimData(float dt, int touchCount)
+    private SimData BuildSimData(float dt, int forceCount)
     {
         return new SimData
         {
@@ -496,30 +538,22 @@ public class InteractiveWater : PostProcessEffect
             AdvectionStrength = AdvectionStrength,
             DeltaTime = dt,
             TexelSize = 1.0f / _textureSize,
-            TouchCount = touchCount,
             NormalStrength = NormalStrength,
-            DetailScale1 = DetailScale1,
-            DetailStrength1 = DetailStrength1,
-            DetailSpeed1 = DetailSpeed1,
-            DetailScale2 = DetailScale2,
-            DetailStrength2 = DetailStrength2,
-            DetailSpeed2 = DetailSpeed2,
-            Time = (float)FlaxEngine.Time.GameTime,
             FoamGeneration = FoamGeneration,
             FoamDecay = FoamDecay,
             BoundaryMode = (float)Boundary,
-            RainStrength = RainStrength,
-            TouchPosition = _cbTouchPosition,
-            TouchRadius = TouchRadius,
-            TouchStrength = _cbTouchStrength,
-            WaveCount = Math.Min(Waves?.Length ?? 0, MaxWaves),
-            MeshSize = MeshSize,
-            WaterOriginX = Actor.Position.X,
-            WaterOriginZ = Actor.Position.Z,
+            Time = (float)FlaxEngine.Time.GameTime,
+            ForceCount = forceCount,
+            WindStrength = WindStrength,
+            WindGustAmount = WindGustAmount,
+            WindNoiseScale = WindNoiseScale,
+            WindGustSpeed = WindGustSpeed,
+            WindWaveHeight = WindWaveHeight,
+            WindFoamAmount = WindFoamAmount,
         };
     }
 
-    private unsafe void DispatchSimulation(GPUContext context, float dt, int touchCount)
+    private unsafe void DispatchSimulation(GPUContext context, float dt, int forceCount)
     {
         GPUTexture srcTexture = _pingPongFlip ? _stateB : _stateA;
         GPUTexture dstTexture = _pingPongFlip ? _stateA : _stateB;
@@ -528,26 +562,17 @@ public class InteractiveWater : PostProcessEffect
         if (cb == IntPtr.Zero)
             return;
 
-        SimData data = BuildSimData(dt, touchCount);
+        SimData data = BuildSimData(dt, forceCount);
         context.UpdateCB(cb, new IntPtr(&data));
         context.BindCB(0, cb);
 
-        // 更新并绑定多触点缓冲 (t1)
-        if (_touchBuffer != null)
-        {
-            if (touchCount > 0)
-            {
-                fixed (Float4* ptr = _touchData)
-                {
-                    context.UpdateBuffer(_touchBuffer, new IntPtr(ptr), (uint)(touchCount * 16));
-                }
-            }
-            context.BindSR(1, _touchBuffer.View());
-        }
+        // 绑定力条目缓冲 (t1)
+        if (_forceBuffer != null)
+            context.BindSR(1, _forceBuffer.View());
 
         uint groupCount = (uint)(_textureSize / ThreadGroupSize);
 
-        // ---- Pass 1: SWE 流体模拟 ----
+        // Pass 1: SWE 流体模拟 + 力场交互
         context.BindSR(0, srcTexture);
         context.BindUA(0, dstTexture.View());
         var csSimulate = RippleShader.GPU.GetCS("CS_Simulate");
@@ -559,9 +584,6 @@ public class InteractiveWater : PostProcessEffect
         _pingPongFlip = !_pingPongFlip;
     }
 
-    /// <summary>
-    /// 法线 Pass: 从最新状态合成多尺度法线。每帧运行 (静止时保持细节流动)。
-    /// </summary>
     private unsafe void DispatchNormals(GPUContext context)
     {
         GPUTexture latestState = _pingPongFlip ? _stateB : _stateA;
@@ -574,30 +596,9 @@ public class InteractiveWater : PostProcessEffect
         context.UpdateCB(cb, new IntPtr(&data));
         context.BindCB(0, cb);
 
-        // 绑定触点缓冲 (t1) 避免未绑定
-        if (_touchBuffer != null)
-            context.BindSR(1, _touchBuffer.View());
-
-        // 首帧生成可平铺细节法线纹理 (仅需一次)
-        if (!_detailNormalGenerated)
-        {
-            context.BindUA(2, _detailNormalTex.View());
-            var csGenDetail = RippleShader.GPU.GetCS("CS_GenerateDetailNormal");
-            uint detailGroups = (uint)(DetailNormalSize / ThreadGroupSize);
-            context.Dispatch(csGenDetail, detailGroups, detailGroups, 1);
-            context.ResetUA();
-            _detailNormalGenerated = true;
-        }
-
-        // 绑定预计算细节法线纹理 (t2)
-        context.BindSR(2, _detailNormalTex);
-
-        // 填充并绑定 Gerstner 环境浪缓冲 (t3)
-        UpdateWaveBuffer(context);
-
         uint groupCount = (uint)(_textureSize / ThreadGroupSize);
 
-        // ---- Pass 2: 多尺度法线合成 ----
+        // Pass 2: 高度场法线
         context.BindSR(0, latestState);
         context.BindUA(1, _normalField.View());
         var csNormals = RippleShader.GPU.GetCS("CS_ComputeNormals");
@@ -608,178 +609,13 @@ public class InteractiveWater : PostProcessEffect
     }
 
     /// <summary>
-    /// 填充并绑定 Gerstner 波缓冲 (归一化方向)。
-    /// </summary>
-    private unsafe void UpdateWaveBuffer(GPUContext context)
-    {
-        if (_waveBuffer == null)
-            return;
-
-        int waveCount = Math.Min(Waves?.Length ?? 0, MaxWaves);
-        if (waveCount > 0)
-        {
-            for (int i = 0; i < waveCount; i++)
-            {
-                GerstnerWave w = Waves[i];
-                Float2 dir = w.Direction;
-                float len = dir.Length;
-                if (len > 0.0001f)
-                    dir = dir / len;
-                else
-                    dir = new Float2(1.0f, 0.0f);
-                _waveData[i] = new GerstnerWave
-                {
-                    Direction = dir,
-                    Wavelength = w.Wavelength,
-                    Amplitude = w.Amplitude,
-                    Speed = w.Speed,
-                    Steepness = w.Steepness,
-                    Phase = w.Phase,
-                    Pad = 0f,
-                };
-            }
-            fixed (GerstnerWave* ptr = _waveData)
-            {
-                context.UpdateBuffer(_waveBuffer, new IntPtr(ptr), (uint)(waveCount * 32));
-            }
-        }
-        context.BindSR(3, _waveBuffer.View());
-    }
-
-    /// <summary>
-    /// 计算指定世界位置的水面高度 (基准高度 + Gerstner 环境浪)。
-    /// 与 shader 使用同一公式, 供浮力等 CPU 逻辑使用。
-    /// </summary>
-    public float GetWaterHeight(Vector3 worldPos)
-    {
-        float height = WaterSurfaceY;
-        if (Waves == null)
-            return height;
-
-        float time = (float)FlaxEngine.Time.GameTime;
-        Float2 posxz = new Float2(worldPos.X, worldPos.Z);
-        int waveCount = Math.Min(Waves.Length, MaxWaves);
-        for (int i = 0; i < waveCount; i++)
-        {
-            GerstnerWave w = Waves[i];
-            if (w.Amplitude <= 0.0001f || w.Wavelength <= 0.0001f)
-                continue;
-            Float2 dir = w.Direction;
-            float len = dir.Length;
-            if (len > 0.0001f)
-                dir = dir / len;
-            else
-                dir = new Float2(1.0f, 0.0f);
-
-            float k = (float)(2.0 * Math.PI) / w.Wavelength;
-            float phase = k * Float2.Dot(dir, posxz) + w.Phase - w.Speed * time;
-            height += w.Amplitude * Mathf.Sin(phase);
-        }
-        return height;
-    }
-
-    /// <summary>
-    /// 根据预设自动生成一组自然的 Gerstner 波 (仿频谱分布: 长波为主, 短波递减, 方向围绕主方向扩散)。
-    /// </summary>
-    public static GerstnerWave[] GenerateWaves(WaterPreset preset)
-    {
-        int count;
-        float baseAmp, minWL, maxWL, domX, domY, spread, speedBase, falloff;
-        switch (preset)
-        {
-            case WaterPreset.CalmLake:
-                count = 4; baseAmp = 2.5f; minWL = 300f; maxWL = 700f;
-                domX = 1f; domY = 0.2f; spread = 3.14f; speedBase = 0.4f; falloff = 0.7f;
-                break;
-            case WaterPreset.Ocean:
-                count = 6; baseAmp = 6f; minWL = 300f; maxWL = 1200f;
-                domX = 1f; domY = 0.3f; spread = 1.2f; speedBase = 0.9f; falloff = 0.75f;
-                break;
-            case WaterPreset.StormySea:
-                count = 8; baseAmp = 12f; minWL = 150f; maxWL = 900f;
-                domX = 1f; domY = 0f; spread = 3.14f; speedBase = 1.6f; falloff = 0.82f;
-                break;
-            case WaterPreset.CoastalShore:
-                count = 5; baseAmp = 5.5f; minWL = 250f; maxWL = 900f;
-                domX = 1f; domY = 0f; spread = 0.5f; speedBase = 1.1f; falloff = 0.7f;
-                break;
-            default:
-                return new GerstnerWave[0];
-        }
-
-        var waves = new GerstnerWave[count];
-        float domAngle = Mathf.Atan2(domY, domX);
-        for (int i = 0; i < count; i++)
-        {
-            float t = count > 1 ? (float)i / (count - 1) : 0f;
-            // 波长: 长波 → 短波
-            float wavelength = Mathf.Lerp(maxWL, minWL, t);
-            // 振幅: 随序号递减 (仿频谱衰减)
-            float amplitude = baseAmp * Mathf.Pow(falloff, i);
-            // 方向: 主方向 + 确定性随机偏移
-            float angleOffset = (Hash01(i * 2 + 1) - 0.5f) * 2f * spread;
-            float angle = domAngle + angleOffset;
-            var dir = new Float2(Mathf.Cos(angle), Mathf.Sin(angle));
-            // 速度: 与波长相关 (深水色散: 长波更快) + 随机拖动
-            float speed = speedBase * Mathf.Sqrt(wavelength / maxWL) * (0.8f + 0.4f * Hash01(i * 3 + 2));
-            float phase = Hash01(i * 5 + 3) * (float)(2.0 * Math.PI);
-            waves[i] = new GerstnerWave
-            {
-                Direction = dir,
-                Wavelength = wavelength,
-                Amplitude = amplitude,
-                Speed = speed,
-                Steepness = 0.5f,
-                Phase = phase,
-                Pad = 0f,
-            };
-        }
-        return waves;
-    }
-
-    /// <summary>确定性哈希 → [0,1] (用于预设生成的随机但可复现的波参数)。</summary>
-    private static float Hash01(int n)
-    {
-        uint x = (uint)n * 2654435761u;
-        x ^= x >> 16;
-        return (x & 0xFFFFFF) / (float)0x1000000;
-    }
-
-    /// <summary>
-    /// 应用预设: 统一配置 Gerstner 波浪 与 细节噪声参数 (尺度/强度/速度)。
-    /// </summary>
-    public void ApplyPreset(WaterPreset preset)
-    {
-        Waves = GenerateWaves(preset);
-        switch (preset)
-        {
-            case WaterPreset.CalmLake: // 平静: 微弱细节, 缓慢流动
-                DetailScale1 = 64f; DetailStrength1 = 0.15f; DetailSpeed1 = 0.3f;
-                DetailScale2 = 128f; DetailStrength2 = 0.1f; DetailSpeed2 = -0.2f;
-                break;
-            case WaterPreset.Ocean: // 海洋: 中等细节
-                DetailScale1 = 64f; DetailStrength1 = 0.3f; DetailSpeed1 = 0.8f;
-                DetailScale2 = 128f; DetailStrength2 = 0.2f; DetailSpeed2 = -0.6f;
-                break;
-            case WaterPreset.StormySea: // 风暴: 强细节, 快速流动
-                DetailScale1 = 80f; DetailStrength1 = 0.5f; DetailSpeed1 = 1.8f;
-                DetailScale2 = 160f; DetailStrength2 = 0.4f; DetailSpeed2 = -1.4f;
-                break;
-            case WaterPreset.CoastalShore: // 海岸: 中等偏强细节
-                DetailScale1 = 64f; DetailStrength1 = 0.35f; DetailSpeed1 = 1.0f;
-                DetailScale2 = 128f; DetailStrength2 = 0.25f; DetailSpeed2 = -0.8f;
-                break;
-        }
-    }
-
-    /// <summary>
-    /// CFL 稳定性校验: 要求 dt * sqrt(g*H) / dx 小于 1。违反时警告 (可能导致发散)。
+    /// CFL 稳定性校验: 要求 dt * sqrt(g*H) 小于 1。违反时警告。
     /// </summary>
     private void ValidateCFL()
     {
         float dt = 1.0f / SimulateSpeed;
         float waveSpeed = Mathf.Sqrt(Mathf.Max(Gravity * Depth, 0f));
-        float cfl = dt * waveSpeed; // dx = 1 texel
+        float cfl = dt * waveSpeed;
         if (cfl >= 1.0f && !_cflWarned)
         {
             Debug.LogWarning(
@@ -819,20 +655,10 @@ public class InteractiveWater : PostProcessEffect
             _normalField.ReleaseGPU();
             Destroy(ref _normalField);
         }
-        if (_detailNormalTex)
+        if (_forceBuffer != null)
         {
-            _detailNormalTex.ReleaseGPU();
-            Destroy(ref _detailNormalTex);
-        }
-        if (_touchBuffer != null)
-        {
-            _touchBuffer.ReleaseGPU();
-            Destroy(ref _touchBuffer);
-        }
-        if (_waveBuffer != null)
-        {
-            _waveBuffer.ReleaseGPU();
-            Destroy(ref _waveBuffer);
+            _forceBuffer.ReleaseGPU();
+            Destroy(ref _forceBuffer);
         }
     }
 }

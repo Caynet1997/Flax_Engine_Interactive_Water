@@ -1,7 +1,7 @@
 ﻿#include "./Flax/Common.hlsl"
 
 #define GROUP_SIZE 8
-#define MAX_TOUCHES 16
+#define MAX_FORCES 256
 
 // =========================================================
 // 常量缓冲: 浅水方程 (SWE) 模拟参数
@@ -15,30 +15,21 @@ META_CB_BEGIN(0, SimData)
     float AdvectionStrength;  // 速度平流强度 (0=关闭)
     float DeltaTime;          // 固定时间步长
     float TexelSize;          // 1/textureSize
-    float TouchCount;         // 多触点数量
-    // 法线
     float NormalStrength;     // 高度场法线强度
-    float DetailScale1;       // 细节噪声层1 频率
-    float DetailStrength1;    // 细节噪声层1 强度
-    float DetailSpeed1;       // 细节噪声层1 流速
-    float DetailScale2;       // 细节噪声层2 频率
-    float DetailStrength2;    // 细节噪声层2 强度
-    float DetailSpeed2;       // 细节噪声层2 流速
-    float Time;               // 动画时间
     // 泡沫
     float FoamGeneration;     // 泡沫生成率
     float FoamDecay;          // 泡沫衰减率
     float BoundaryMode;       // 0=Solid 1=Open 2=Wrap
-    float RainStrength;       // 雨滴强度 (0=关闭)
-    // 单触点回退 (当 TouchCount==0 时使用)
-    float2 TouchPosition;
-    float TouchRadius;
-    float TouchStrength;
-    // Gerstner 环境浪 / 坐标变换
-    float WaveCount;
-    float MeshSize;
-    float WaterOriginX;
-    float WaterOriginZ;
+    float Time;               // 动画时间
+    // 交互
+    float ForceCount;         // 本帧力条目数量
+    // 全局风力 (风向由 shader 内噪声场逐位置计算, 无需 CPU 传递)
+    float WindStrength;       // 风力强度 (加速度)
+    float WindGustAmount;     // 阵风调制幅度 (0=稳定风)
+    float WindNoiseScale;     // 阵风空间频率 (每 texel)
+    float WindGustSpeed;      // 阵风漂移速度
+    float WindWaveHeight;     // 阵风气压→高度耦合 (波浪起伏强度)
+    float WindFoamAmount;     // 风驱泡沫 (白浪) 生成率
 META_CB_END
 
 // =========================================================
@@ -46,182 +37,43 @@ META_CB_END
 // =========================================================
 // 状态纹理 (r=高度h, g=速度u, b=速度v, a=泡沫foam)
 Texture2D<float4> StateSrc : register(t0);
-// 多触点缓冲: float4(x, y, strength, radius)
-StructuredBuffer<float4> TouchPoints : register(t1);
-// 预计算的可平铺细节法线纹理 (启动时生成一次)
-Texture2D<float4> DetailNormalTex : register(t2);
-// Gerstner 环境浪参数缓冲
-struct GerstnerWave
+// 力条目缓冲 (CPU 每帧上传)
+struct ForceEntry
 {
-    float2 Direction;   // 归一化传播方向 (XZ)
-    float Wavelength;
-    float Amplitude;
-    float Speed;
-    float Steepness;
-    float Phase;
-    float Pad;
+    float2 Center;     // 纹理空间中心
+    float Radius;      // 纹理空间半径
+    float Strength;    // 强度
+    float2 Direction;  // 方向 (Directional/Vortex/Attractor 使用)
+    float HeightAmt;   // 高度修改量
+    float FoamAmt;     // 泡沫量
+    float Type;        // 0=Radial 1=Directional 2=Vortex 3=Attractor 4=Height 5=Foam
 };
-StructuredBuffer<GerstnerWave> Waves : register(t3);
-// 输出: 新状态 (UAV u0) 与 多尺度法线 (UAV u1)
+StructuredBuffer<ForceEntry> Forces : register(t1);
+// 输出: 新状态 (UAV u0) 与 法线 (UAV u1)
 RWTexture2D<float4> StateDst : register(u0);
 RWTexture2D<float4> NormalField : register(u1);
-// 细节法线生成输出 (UAV u2, 仅 CS_GenerateDetailNormal 使用)
-RWTexture2D<float4> DetailNormalOut : register(u2);
 
 // 共享内存 (含 1 像素光晕)
 groupshared float4 g_Cache[GROUP_SIZE + 2][GROUP_SIZE + 2];
 
 // =========================================================
-// 程序化噪声 (用于细节法线)
+// 梯度噪声 (用于风力阵风的空间调制)
 // =========================================================
-float2 NoiseHash(float2 p)
+float2 WindNoiseHash(float2 p)
 {
     p = float2(dot(p, float2(127.1, 311.7)), dot(p, float2(269.5, 183.3)));
     return -1.0 + 2.0 * frac(sin(p) * 43758.5453123);
 }
 
-float GradientNoise(float2 p)
+float WindNoise(float2 p)
 {
     float2 i = floor(p);
     float2 f = frac(p);
     float2 u = f * f * (3.0 - 2.0 * f);
-
-    return lerp(lerp(dot(NoiseHash(i + float2(0.0, 0.0)), f - float2(0.0, 0.0)),
-                     dot(NoiseHash(i + float2(1.0, 0.0)), f - float2(1.0, 0.0)), u.x),
-                lerp(dot(NoiseHash(i + float2(0.0, 1.0)), f - float2(0.0, 1.0)),
-                     dot(NoiseHash(i + float2(1.0, 1.0)), f - float2(1.0, 1.0)), u.x), u.y);
-}
-
-float FBM(float2 p)
-{
-    float value = 0.0;
-    float amplitude = 0.5;
-    for (int i = 0; i < 3; i++)
-    {
-        value += amplitude * GradientNoise(p);
-        p *= 2.0;
-        amplitude *= 0.5;
-    }
-    return value;
-}
-
-// 标量哈希 (用于雨滴随机分布)
-float Hash12(float2 p)
-{
-    float3 p3 = frac(float3(p.xyx) * 0.1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return frac((p3.x + p3.y) * p3.z);
-}
-
-// =========================================================
-// 可平铺噪声 (用于预计算细节法线纹理)
-// =========================================================
-#define DETAIL_BASE_PERIOD 8.0 // 细节纹理原生平铺周期 (8 个噪声单元)
-
-float2 TileHash(float2 i, float period)
-{
-    i = ((i % period) + period) % period; // 晶格坐标环绕 → 噪声可平铺
-    return NoiseHash(i);
-}
-
-float TileableGradientNoise(float2 p, float period)
-{
-    float2 i = floor(p);
-    float2 f = frac(p);
-    float2 u = f * f * (3.0 - 2.0 * f);
-    return lerp(lerp(dot(TileHash(i + float2(0.0, 0.0), period), f - float2(0.0, 0.0)),
-                     dot(TileHash(i + float2(1.0, 0.0), period), f - float2(1.0, 0.0)), u.x),
-                lerp(dot(TileHash(i + float2(0.0, 1.0), period), f - float2(0.0, 1.0)),
-                     dot(TileHash(i + float2(1.0, 1.0), period), f - float2(1.0, 1.0)), u.x), u.y);
-}
-
-float TileableFBM(float2 p, float basePeriod)
-{
-    float value = 0.0;
-    float amplitude = 0.5;
-    float period = basePeriod;
-    for (int i = 0; i < 4; i++)
-    {
-        value += amplitude * TileableGradientNoise(p, period);
-        p *= 2.0;
-        period *= 2.0;
-        amplitude *= 0.5;
-    }
-    return value;
-}
-
-// 采样预计算细节法线 (双线性 + 环绕平铺, 替代每帧 FBM)
-float3 SampleDetailNormal(float2 uvTiled, float strength)
-{
-    uint2 dts;
-    DetailNormalTex.GetDimensions(dts.x, dts.y);
-    int2 sz = int2(dts);
-
-    float2 coord = frac(uvTiled) * float2(dts) - 0.5;
-    float2 f = frac(coord);
-    int2 i = int2(floor(coord));
-
-    float3 n00 = DetailNormalTex[uint2(((i + int2(0, 0)) % sz + sz) % sz)].xyz;
-    float3 n10 = DetailNormalTex[uint2(((i + int2(1, 0)) % sz + sz) % sz)].xyz;
-    float3 n01 = DetailNormalTex[uint2(((i + int2(0, 1)) % sz + sz) % sz)].xyz;
-    float3 n11 = DetailNormalTex[uint2(((i + int2(1, 1)) % sz + sz) % sz)].xyz;
-
-    float3 n = lerp(lerp(n00, n10, f.x), lerp(n01, n11, f.x), f.y);
-    n = n * 2.0 - 1.0; // 解码 [0,1] → [-1,1]
-    n.xy *= strength;
-    return normalize(n);
-}
-
-// 程序化细节法线 (噪声梯度, 随时间流动)
-float3 ProceduralDetailNormal(float2 uv, float scale, float flowSpeed, float strength)
-{
-    float eps = 0.02;
-    float2 coord = uv * scale + float2(Time, Time * 0.63) * flowSpeed;
-
-    float h  = FBM(coord);
-    float hx = FBM(coord + float2(eps, 0.0));
-    float hy = FBM(coord + float2(0.0, eps));
-
-    float dhdx = (hx - h) / eps;
-    float dhdy = (hy - h) / eps;
-
-    return normalize(float3(-dhdx * strength, -dhdy * strength, 1.0));
-}
-
-// RNM 法线混合 (Reoriented Normal Mapping)
-float3 BlendRNM(float3 baseNormal, float3 detailNormal)
-{
-    float3 t = baseNormal + float3(0.0, 0.0, 1.0);
-    float3 u = detailNormal * float3(-1.0, -1.0, 1.0);
-    return normalize((t / t.z) * dot(t, u) - u);
-}
-
-// Gerstner 环境浪法线 (与 CPU GetWaterHeight 同公式)
-// 输出切线空间法线 (Z 为表面法线), 与基础法线约定一致:
-//   纹理 x ↔ 世界 X, 纹理 y ↔ 世界 -Z
-float3 ComputeGerstnerNormal(float2 worldXZ, float time)
-{
-    float dhdx = 0.0; // 世界 X 方向高度梯度
-    float dhdz = 0.0; // 世界 Z 方向高度梯度
-    int count = (int)WaveCount;
-    for (int i = 0; i < count; i++)
-    {
-        GerstnerWave w = Waves[i];
-        if (w.Amplitude <= 0.0001 || w.Wavelength <= 0.0001)
-            continue;
-        float k = 6.2831853 / w.Wavelength;
-        float phi = k * dot(w.Direction, worldXZ) + w.Phase - w.Speed * time;
-        float c = cos(phi);
-        // d(A*sin(phi))/dx = A*k*dir.x*cos(phi)
-        dhdx += w.Amplitude * k * w.Direction.x * c;
-        dhdz += w.Amplitude * k * w.Direction.y * c;
-    }
-    // 世界梯度 → 每 texel 梯度 (乘以 世界单位/texel), 再转切线空间法线
-    // gradScale = MeshSize * TexelSize = MeshSize / texSize
-    float gradScale = MeshSize * TexelSize;
-    // normal.x = -dh/d(texel x) = -dhdx * gradScale
-    // normal.y = -dh/d(texel y) = -dhdz * (-gradScale) = dhdz * gradScale (因 texel y ↔ 世界 -Z)
-    return normalize(float3(-dhdx * gradScale, dhdz * gradScale, 1.0));
+    return lerp(lerp(dot(WindNoiseHash(i + float2(0.0, 0.0)), f - float2(0.0, 0.0)),
+                     dot(WindNoiseHash(i + float2(1.0, 0.0)), f - float2(1.0, 0.0)), u.x),
+                lerp(dot(WindNoiseHash(i + float2(0.0, 1.0)), f - float2(0.0, 1.0)),
+                     dot(WindNoiseHash(i + float2(1.0, 1.0)), f - float2(1.0, 1.0)), u.x), u.y);
 }
 
 // =========================================================
@@ -258,7 +110,69 @@ float4 SampleStateBilinear(float2 uv, uint2 texSize)
 }
 
 // =========================================================
-// Pass 1: 浅水方程 (SWE) 流体模拟
+// 力场计算: 遍历所有力条目, 累加对当前像素的影响
+// =========================================================
+void ApplyForces(uint2 pos, inout float h, inout float u, inout float v, inout float foam)
+{
+    int count = (int)ForceCount;
+    for (int i = 0; i < count; i++)
+    {
+        ForceEntry f = Forces[i];
+        float2 delta = (float2)pos - f.Center;
+        float dist = length(delta);
+        if (dist > f.Radius)
+            continue;
+
+        // 平滑衰减
+        float t = dist / max(f.Radius, 0.001);
+        float falloff = 1.0 - t * t;
+        falloff *= falloff;
+        if (falloff < 0.001)
+            continue;
+
+        int type = (int)f.Type;
+        if (type == 0) // Radial: 径向推挤 + 下压
+        {
+            float2 dir = delta / max(dist, 0.001);
+            float s = falloff * f.Strength;
+            u += dir.x * s;
+            v += dir.y * s;
+            h -= s * 0.5;
+            foam += s * 0.1;
+        }
+        else if (type == 1) // Directional: 方向力
+        {
+            float s = falloff * f.Strength;
+            u += f.Direction.x * s;
+            v += f.Direction.y * s;
+        }
+        else if (type == 2) // Vortex: 切线方向
+        {
+            float2 tangent = float2(-delta.y, delta.x) / max(dist, 0.001);
+            float s = falloff * f.Strength;
+            u += tangent.x * s;
+            v += tangent.y * s;
+        }
+        else if (type == 3) // Attractor: 吸引/排斥
+        {
+            float2 dir = -delta / max(dist, 0.001);
+            float s = falloff * f.Strength;
+            u += dir.x * s;
+            v += dir.y * s;
+        }
+        else if (type == 4) // HeightModifier: 高度修改
+        {
+            h += falloff * f.HeightAmt;
+        }
+        else if (type == 5) // FoamSource: 泡沫注入
+        {
+            foam += falloff * f.FoamAmt;
+        }
+    }
+}
+
+// =========================================================
+// Pass 1: 浅水方程 (SWE) 流体模拟 + 力场交互
 // =========================================================
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
@@ -341,6 +255,58 @@ void CS_Simulate(
     u += DeltaTime * (-Gravity * dhdx + Viscosity * lap_u);
     v += DeltaTime * (-Gravity * dhdy + Viscosity * lap_v);
 
+    // ---- 4.5 全局风力: 逐位置动态风向场 + 多尺度噪声 + 阵风包络 + 直接高度耦合 + 风驱泡沫 ----
+    // 风向由低频噪声场逐位置计算 (随空间/时间平滑演变), 均匀风力散度为零不产生波浪。
+    float windFoamGen = 0.0; // 风驱泡沫生成率 (先记录, 待泡沫平流后再累加, 避免被平流覆盖)
+    if (WindStrength > 0.0001)
+    {
+        float drift = Time * WindGustSpeed;
+
+        // 逐位置风向场: 低频噪声驱动方向角 (空间平滑 + 时间演变), 形成移动的风向域
+        float2 dirCoord = (float2)pos * (WindNoiseScale * 0.5) + float2(drift * 0.15, drift * 0.11);
+        float dirAngle = WindNoise(dirCoord) * 3.14159265; // [-pi, pi]
+        float2 windDir = float2(cos(dirAngle), sin(dirAngle));
+        float2 perpDir = float2(-windDir.y, windDir.x);
+
+        // (1) 全局阵风包络: 多频正弦叠加, 整体风力随时间自然强弱起伏
+        float envelope = 0.65 + 0.35 * (0.55 * sin(Time * 0.6)
+                                      + 0.30 * sin(Time * 1.5 + 1.7)
+                                      + 0.15 * sin(Time * 3.1 + 4.2));
+        float effStrength = WindStrength * envelope;
+
+        // (2) 风向扩散: 局部风向 ±30° 的斜向波列 (真实风浪的方向扩散)
+        float cosA = 0.866; // cos(30°)
+        float sinA = 0.5;   // sin(30°)
+        float2 spreadDir1 = float2(windDir.x * cosA - windDir.y * sinA,  windDir.x * sinA + windDir.y * cosA);
+        float2 spreadDir2 = float2(windDir.x * cosA + windDir.y * sinA, -windDir.x * sinA + windDir.y * cosA);
+
+        // 三频移动噪声 (大涌浪 / 中浪 / 小涟漪), 随局部风向漂移形成传播
+        float2 c1 = (float2)pos * WindNoiseScale + windDir * drift;
+        float2 c2 = (float2)pos * (WindNoiseScale * 2.3) + windDir * (drift * 1.7) + perpDir * (drift * 0.35);
+        float2 c3 = (float2)pos * (WindNoiseScale * 5.1) + windDir * (drift * 2.4);
+        float gust = WindNoise(c1) + 0.5 * WindNoise(c2) + 0.25 * WindNoise(c3);
+
+        // 斜向波噪声 (风向扩散)
+        float spread1 = WindNoise((float2)pos * (WindNoiseScale * 1.6) + spreadDir1 * (drift * 1.3));
+        float spread2 = WindNoise((float2)pos * (WindNoiseScale * 1.9) + spreadDir2 * (drift * 1.5));
+
+        // 风应力: 主方向 (阵风调制) + 横向湍流 + 斜向波列
+        float lateral = WindNoise(c2 + 7.31);
+        float2 stress = windDir    * (effStrength * (1.0 + WindGustAmount * gust))
+                      + perpDir    * (effStrength * WindGustAmount * 0.4 * lateral)
+                      + spreadDir1 * (effStrength * 0.3 * spread1)
+                      + spreadDir2 * (effStrength * 0.3 * spread2);
+        u += DeltaTime * stress.x;
+        v += DeltaTime * stress.y;
+
+        // 阵风气压直接变形水面 (最直观的波浪来源, 随后由重力恢复形成传播)
+        float totalGust = gust + 0.4 * spread1 + 0.4 * spread2;
+        h += DeltaTime * effStrength * totalGust * WindWaveHeight;
+
+        // (3) 风驱泡沫: 强阵风处的波峰生成白浪 (先记录, 平流后再加)
+        windFoamGen = max(0.0, totalGust) * effStrength * WindFoamAmount;
+    }
+
     // 线性阻尼
     float dragFactor = max(0.0, 1.0 - Drag * DeltaTime);
     u *= dragFactor;
@@ -356,9 +322,6 @@ void CS_Simulate(
     }
 
     // ---- 6. 高度更新 (连续性方程: 散度驱动) ----
-    // 关键: 必须使用更新后速度的散度 (辛欧拉/半隐式格式)。
-    // 若直接用旧散度 (前向欧拉), 波动方程无条件不稳定, 能量指数增长成噪点。
-    // 解析近似: div(v_new) = div(v_old) + dt*(-g*lap(h)) (忽略粘度小项)
     float divNew = divergence - DeltaTime * Gravity * lap_h;
     h += DeltaTime * (-Depth * divNew);
 
@@ -366,61 +329,15 @@ void CS_Simulate(
     // 平流: 在回溯位置采样上一帧泡沫, 使泡沫随水流漂移
     float2 foamBackPos = (float2)pos + 0.5 - float2(u, v) * DeltaTime;
     foam = SampleStateBilinear(foamBackPos, texSize).a;
-    // 生成与衰减
+    // 生成: 波峰陡峭度 (-lap_h) + 水流汇聚 (-divergence) + 风驱白浪
     float convergence = max(0.0, -divergence);
     float steepness = max(0.0, -lap_h);
-    float foamSource = FoamGeneration * (steepness + convergence);
-    foam += DeltaTime * foamSource;
+    foam += DeltaTime * (FoamGeneration * (steepness + convergence) + windFoamGen);
+    // 衰减
     foam *= max(0.0, 1.0 - FoamDecay * DeltaTime);
 
-    // ---- 8. 交互: 多触点速度冲量 ----
-    int touchCount = (int)TouchCount;
-    for (int ti = 0; ti < touchCount; ti++)
-    {
-        float4 tp = TouchPoints[ti];
-        float dist = distance((float2)pos, tp.xy);
-        float falloff = 1.0 - saturate(dist / max(tp.w, 0.001));
-        falloff *= falloff;
-        if (falloff > 0.001)
-        {
-            float2 dir = ((float2)pos - tp.xy) / max(dist, 0.001);
-            u += dir.x * tp.z * falloff;
-            v += dir.y * tp.z * falloff;
-            h -= tp.z * falloff * 0.5; // 下压水面
-        }
-    }
-    // 单触点回退
-    if (touchCount == 0 && TouchStrength > 0.0)
-    {
-        float dist = distance((float2)pos, TouchPosition);
-        float falloff = 1.0 - saturate(dist / max(TouchRadius, 0.001));
-        falloff *= falloff;
-        if (falloff > 0.001)
-        {
-            float2 dir = ((float2)pos - TouchPosition) / max(dist, 0.001);
-            u += dir.x * TouchStrength * falloff;
-            v += dir.y * TouchStrength * falloff;
-            h -= TouchStrength * falloff * 0.5;
-        }
-    }
-
-    // ---- 8.5 下雨: 随机点状小冲量 (基于网格哈希, 不占用触点配额) ----
-    if (RainStrength > 0.001)
-    {
-        float cellSize = 16.0;
-        float2 cell = floor((float2)pos / cellSize);
-        float slot = floor(Time * 15.0); // 每秒 30 个雨滴时隙
-        float rnd = Hash12(cell * 1.618 + slot * 7.31);
-        if (rnd < 0.06) // 约 12% 的网格在当前时隙产生雨滴
-        {
-            float2 offset = float2(Hash12(cell + 1.7), Hash12(cell + 9.3));
-            float2 dropCenter = (cell + offset) * cellSize;
-            float dist = distance((float2)pos, dropCenter);
-            float dropRadius = 4.0;
-            float falloff = 1.0 - saturate(dist / dropRadius);
-            h -= RainStrength * falloff * falloff;
-        }
-    }
+    // ---- 8. 力场交互: 遍历力条目施加冲量 ----
+    ApplyForces(pos, h, u, v, foam);
 
     // ---- 9. 边界条件 ----
     bool atLeft   = pos.x == 0;
@@ -458,7 +375,7 @@ void CS_Simulate(
 }
 
 // =========================================================
-// Pass 2: 多尺度法线合成
+// Pass 2: 高度场法线 (纯 Sobel 梯度, 无细节噪声/环境浪)
 // =========================================================
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
@@ -474,8 +391,6 @@ void CS_ComputeNormals(
     if (pos.x >= texSize.x || pos.y >= texSize.y)
         return;
 
-    float2 uv = (float2)pos / (float2)texSize;
-
     // 边界像素: 默认法线
     if (pos.x == 0 || pos.x >= texSize.x - 1 || pos.y == 0 || pos.y >= texSize.y - 1)
     {
@@ -483,7 +398,7 @@ void CS_ComputeNormals(
         return;
     }
 
-    // ---- 1. 基础法线: 高度场 Sobel 梯度 ----
+    // 高度场 Sobel 梯度 (3x3 加权)
     float h_l = StateSrc[pos - uint2(1, 0)].r
               + 0.25 * StateSrc[uint2(pos.x - 1, pos.y - 1)].r
               + 0.25 * StateSrc[uint2(pos.x - 1, pos.y + 1)].r;
@@ -499,51 +414,7 @@ void CS_ComputeNormals(
 
     float dhdx = (h_r - h_l) * 0.5 * NormalStrength;
     float dhdy = (h_u - h_d) * 0.5 * NormalStrength;
-    float3 baseNormal = normalize(float3(-dhdx, -dhdy, 1.0));
-
-    // ---- 2. 细节法线: 采样预计算可平铺噪声纹理 (时间滚动, 替代每帧 FBM) ----
-    float invPeriod = 1.0 / DETAIL_BASE_PERIOD;
-    float2 scroll1 = float2(Time, Time * 0.63) * DetailSpeed1 * invPeriod;
-    float2 scroll2 = float2(-Time * 0.8, Time * 0.45) * DetailSpeed2 * invPeriod;
-    float3 detail1 = SampleDetailNormal(uv * DetailScale1 * invPeriod + scroll1, DetailStrength1);
-    float3 detail2 = SampleDetailNormal(uv * DetailScale2 * invPeriod + scroll2, DetailStrength2);
-
-    // ---- 3. Gerstner 环境浪法线 (texel → 世界坐标) ----
-    float2 worldToUV = uv * MeshSize;
-    float worldX = worldToUV.x - MeshSize * 0.5 + WaterOriginX;
-    float worldZ = -worldToUV.y + MeshSize * 0.5 + WaterOriginZ;
-    float3 gerstnerNormal = ComputeGerstnerNormal(float2(worldX, worldZ), Time);
-
-    // ---- 4. RNM 混合 (大尺度环境浪 → 交互涟漪 → 细节) ----
-    float3 normal = BlendRNM(gerstnerNormal, baseNormal);
-    normal = BlendRNM(normal, detail1);
-    normal = BlendRNM(normal, detail2);
+    float3 normal = normalize(float3(-dhdx, -dhdy, 1.0));
 
     NormalField[pos] = float4(normal * 0.5 + 0.5, 1.0);
-}
-
-// =========================================================
-// Pass 3: 生成可平铺细节法线纹理 (启动时运行一次)
-// =========================================================
-META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
-void CS_GenerateDetailNormal(uint3 dispatchThreadID : SV_DispatchThreadID)
-{
-    uint2 pos = dispatchThreadID.xy;
-    uint2 texSize;
-    DetailNormalOut.GetDimensions(texSize.x, texSize.y);
-
-    if (pos.x >= texSize.x || pos.y >= texSize.y)
-        return;
-
-    // uv 跨越 [0, DETAIL_BASE_PERIOD), 噪声周期环绕 → 纹理可无缝平铺
-    float2 uv = (float2)pos / (float2)texSize * DETAIL_BASE_PERIOD;
-    float eps = 0.05;
-
-    float h  = TileableFBM(uv, DETAIL_BASE_PERIOD);
-    float hx = TileableFBM(uv + float2(eps, 0.0), DETAIL_BASE_PERIOD);
-    float hy = TileableFBM(uv + float2(0.0, eps), DETAIL_BASE_PERIOD);
-
-    float3 normal = normalize(float3(-(hx - h) / eps, -(hy - h) / eps, 1.0));
-    DetailNormalOut[pos] = float4(normal * 0.5 + 0.5, 1.0);
 }

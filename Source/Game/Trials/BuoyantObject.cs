@@ -46,7 +46,7 @@ public class BuoyantObject : Script
             return;
 
         Vector3 pos = Actor.Position;
-        // 水面高度 (基准 + Gerstner 环境浪), 使物体随波浪起伏
+        // 水面高度 (基准 + 高度场缓存)
         float waterY = water.GetWaterHeight(pos);
         bool isUnderwater = pos.Y < waterY;
 
@@ -54,19 +54,21 @@ public class BuoyantObject : Script
         {
             Vector3 velocity = _rigidbody.LinearVelocity;
 
-            // 入水瞬间: 按冲击速度注入大冲量 (浪花)
+            // 入水瞬间: 按冲击速度注入径向冲量 (浪花)
             if (isUnderwater && !_wasUnderwater)
             {
                 float impactSpeed = Mathf.Abs(velocity.Y);
                 float strength = Mathf.Clamp(impactSpeed * MassFactor * SplashStrength * 0.05f, 0.5f, 20.0f);
-                water.AddObjectTouch(pos, strength, Radius);
+                water.AddRadialImpulse(pos, strength, Radius);
             }
-            // 水下移动: 持续注入小冲量 (尾迹)
-            else if (isUnderwater  && Engine.FrameCount % 10 == 0)
+            // 水下移动: 沿速度方向施加方向力 (尾迹)
+            else if (isUnderwater && Engine.FrameCount % 10 == 0)
             {
                 float speed = Mathf.Max(velocity.Length, 1.0f);
                 float strength = Mathf.Clamp(speed * MassFactor * WakeStrength * 0.02f, 0.0f, 5.0f);
-                water.AddObjectTouch(pos, strength, Radius * 0.7f);
+                var dir = new Float2(velocity.X, -velocity.Z);
+                if (dir.Length > 0.001f)
+                    water.AddDirectionalForce(pos, dir.Normalized, strength, Radius * 0.7f);
             }
 
             // 浮力 + 水阻 (简化阿基米德, 按质量缩放以自动平衡重力)

@@ -7,4 +7,5 @@ A simple demo including the following content:
 3. all kind of water interactive ways (ripple / direction / height / foam etc)
 ﻿
 ## Known Issues:
-Planar reflection can't rendering shadow or sky correctly somehow caused by the oblique projection matrix.
+Planar reflection can't rendering shadow or sky correctly and some other visual issues somehow caused by the oblique projection matrix.
+The current alternative is to add an additional scene rendering task to render the sky separately and synthesize it in the material.
